@@ -21,16 +21,14 @@
 #include "esp_http_server.h"
 #include "dns_server.h"
 
-#define EXAMPLE_ESP_WIFI_SSID CONFIG_ESP_WIFI_SSID
-#define EXAMPLE_ESP_WIFI_PASS CONFIG_ESP_WIFI_PASSWORD
-#define EXAMPLE_MAX_STA_CONN CONFIG_ESP_MAX_STA_CONN
+#include "windsensor.h"
 
 extern const char root_start[] asm("_binary_root_html_start");
 extern const char root_end[] asm("_binary_root_html_end");
 
 static const char *TAG = "example";
 
-static void wifi_event_handler(void *arg, esp_event_base_t event_base,
+static void wifi_event_handler(__unused void *arg,__unused esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
 {
     if (event_id == WIFI_EVENT_AP_STACONNECTED) {
@@ -53,16 +51,13 @@ static void wifi_init_softap(void)
 
     wifi_config_t wifi_config = {
         .ap = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,
-            .ssid_len = strlen(EXAMPLE_ESP_WIFI_SSID),
-            .password = EXAMPLE_ESP_WIFI_PASS,
-            .max_connection = EXAMPLE_MAX_STA_CONN,
+            .ssid = CONFIG_ESP_WIFI_SSID,
+            .ssid_len = strlen(CONFIG_ESP_WIFI_SSID),
+            .password = CONFIG_ESP_WIFI_PASSWORD,
+            .max_connection = CONFIG_ESP_MAX_STA_CONN,
             .authmode = WIFI_AUTH_WPA_WPA2_PSK
         },
     };
-    if (strlen(EXAMPLE_ESP_WIFI_PASS) == 0) {
-        wifi_config.ap.authmode = WIFI_AUTH_OPEN;
-    }
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &wifi_config));
@@ -76,13 +71,13 @@ static void wifi_init_softap(void)
     ESP_LOGI(TAG, "Set up softAP with IP: %s", ip_addr);
 
     ESP_LOGI(TAG, "wifi_init_softap finished. SSID:'%s' password:'%s'",
-             EXAMPLE_ESP_WIFI_SSID, EXAMPLE_ESP_WIFI_PASS);
+             CONFIG_ESP_WIFI_SSID, CONFIG_ESP_WIFI_PASSWORD);
 }
 
 // HTTP GET Handler
 static esp_err_t root_get_handler(httpd_req_t *req)
 {
-    const uint32_t root_len = root_end - root_start;
+    const ssize_t root_len = root_end - root_start;
 
     ESP_LOGI(TAG, "Serve root");
     httpd_resp_set_type(req, "text/html");
@@ -98,7 +93,7 @@ static const httpd_uri_t root = {
 };
 
 // HTTP Error (404) Handler - Redirects all requests to the root page
-esp_err_t http_404_error_handler(httpd_req_t *req, httpd_err_code_t err)
+esp_err_t http_404_error_handler(httpd_req_t *req, __unused httpd_err_code_t err)
 {
     // Set status
     httpd_resp_set_status(req, "302 Temporary Redirect");
@@ -131,6 +126,7 @@ static httpd_handle_t start_webserver(void)
 
 void app_main(void)
 {
+    initAngleSensor();
     /*
         Turn of warnings from HTTP server as redirecting traffic will yield
         lots of invalid requests
