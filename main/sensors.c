@@ -28,7 +28,7 @@ static const char *TAG_ANGLE = "mech-windsensor";
 
 void angle_loop();
 
-void initAngleSensor() {
+void sensor_task(void* args) {
     ESP_LOGI(TAG_ANGLE, "Initialize i2c");
     i2c_config_t conf = {
             .mode = I2C_MODE_MASTER,

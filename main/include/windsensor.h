@@ -1,5 +1,5 @@
 #pragma once
 
 
-void initAngleSensor();
+_Noreturn void sensor_task(void* args);
 

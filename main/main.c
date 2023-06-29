@@ -22,6 +22,7 @@
 #include "dns_server.h"
 
 #include "windsensor.h"
+#include "freertos/task.h"
 
 extern const char root_start[] asm("_binary_root_html_start");
 extern const char root_end[] asm("_binary_root_html_end");
@@ -78,8 +79,7 @@ static void wifi_init_softap(void)
 static esp_err_t root_get_handler(httpd_req_t *req)
 {
     const ssize_t root_len = root_end - root_start;
-
-    ESP_LOGI(TAG, "Serve root");
+    ESP_LOGI(TAG, "Serve root: %s", req->uri);
     httpd_resp_set_type(req, "text/html");
     httpd_resp_send(req, root_start, root_len);
 
@@ -102,7 +102,7 @@ esp_err_t http_404_error_handler(httpd_req_t *req, __unused httpd_err_code_t err
     // iOS requires content in the response to detect a captive portal, simply redirecting is not sufficient.
     httpd_resp_send(req, "Redirect to the captive portal", HTTPD_RESP_USE_STRLEN);
 
-    ESP_LOGI(TAG, "Redirecting to root");
+    ESP_LOGI(TAG, "Redirecting to root: %s", req->uri);
     return ESP_OK;
 }
 
@@ -124,9 +124,9 @@ static httpd_handle_t start_webserver(void)
     return server;
 }
 
+TaskHandle_t sensor_task_handle;
 void app_main(void)
 {
-    initAngleSensor();
     /*
         Turn of warnings from HTTP server as redirecting traffic will yield
         lots of invalid requests
@@ -156,4 +156,6 @@ void app_main(void)
 
     // Start the DNS server that will redirect all queries to the softAP IP
     start_dns_server();
+
+    xTaskCreate(sensor_task,"Sensor Task",4096,NULL,10,&sensor_task_handle);
 }
