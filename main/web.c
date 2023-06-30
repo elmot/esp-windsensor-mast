@@ -2,7 +2,8 @@
 static const char *TAG = "web";
 extern const char root_start[] asm("_binary_root_html_start");
 extern const char root_end[] asm("_binary_root_html_end");
-// HTTP GET Handler
+
+// HTTP GET Handlers
 static esp_err_t wind_get_handler(httpd_req_t *req)
 {
     const ssize_t root_len = root_end - root_start;
@@ -36,6 +37,20 @@ static const httpd_uri_t wind = {
         .handler = wind_get_handler
 };
 
+static esp_err_t data_handler(httpd_req_t *req) {
+    char data_response[500];
+    int data_len = sensor_response(data_response, sizeof (data_response));
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_send(req, data_response, data_len);
+    return ESP_OK;
+}
+
+static const httpd_uri_t data = {
+        .uri = "/data",
+        .method = HTTP_GET,
+        .handler = data_handler
+};
+
 // HTTP Error (404) Handler - Redirects all requests to the root page
 esp_err_t http_404_error_handler(httpd_req_t *req, __unused httpd_err_code_t err)
 {
@@ -45,5 +60,6 @@ esp_err_t http_404_error_handler(httpd_req_t *req, __unused httpd_err_code_t err
 void registerHttpHandlers(httpd_handle_t server) {
     httpd_register_uri_handler(server, &root);
     httpd_register_uri_handler(server, &wind);
+    httpd_register_uri_handler(server, &data);
     httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, http_404_error_handler);
 }

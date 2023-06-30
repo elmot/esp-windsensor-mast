@@ -18,3 +18,5 @@ typedef struct {
 } angle_info_t;
 extern volatile angle_info_t angle_info;
 
+int sensor_response(char *buffer, ssize_t capacity);
+

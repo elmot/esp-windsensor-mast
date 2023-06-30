@@ -1,533 +1,559 @@
 <!doctype html>
 <html>
 <head>
-    <meta charset="UTF-8"/>
-    <title>Yanus Wind System</title>
+    <meta charset="UTF-8"/>
+    <title>Yanus Wind System</title>
 </head>
 <body style="background-color: black" onload="startNmea()">
 <div id="canvasLayeredContainer" style="position:relative; width: 320px; height: 480px">
-    <canvas id="bodyCanvas" style="z-index: 1; position:absolute; left:0px; top:0px;">
-        Your browser doesn't support canvas
-    </canvas>
-    <canvas id="awaCanvas" style="z-index: 2; position:absolute; left:0px; top:0px;">
-    </canvas>
-    <canvas id="twaCanvas" style="z-index: 3; position:absolute; left:0px; top:0px;">
-    </canvas>
-    <canvas id="awaDisplayCanvas" style="z-index: 4; position:absolute; left:0px; top:0px;">
-    </canvas>
-    <canvas id="awaDisplayDataCanvas" style="z-index: 5; position:absolute; left:0px; top:0px;">
-    </canvas>
-    <canvas id="awsCanvas" style="z-index: 6; position:absolute; left:0px; top:0px;">
-    </canvas>
-    <canvas id="twsCanvas" style="z-index: 7; position:absolute; left:0px; top:0px;">
-    </canvas>
-    <canvas id="sogCanvas" style="z-index: 8; position:absolute; left:0px; top:0px;">
-    </canvas>
-    <canvas id="twdCanvas" style="z-index: 9; position:absolute; left:0px; top:0px;">
-    </canvas>
+    <canvas id="bodyCanvas" style="z-index: 1; position:absolute; left:0px; top:0px;">
+        Your browser doesn't support canvas
+    </canvas>
+    <canvas id="awaCanvas" style="z-index: 2; position:absolute; left:0px; top:0px;">
+    </canvas>
+    <canvas id="twaCanvas" style="z-index: 3; position:absolute; left:0px; top:0px;">
+    </canvas>
+    <canvas id="awaDisplayCanvas" style="z-index: 4; position:absolute; left:0px; top:0px;">
+    </canvas>
+    <canvas id="awaDisplayDataCanvas" style="z-index: 5; position:absolute; left:0px; top:0px;">
+    </canvas>
+    <canvas id="awsCanvas" style="z-index: 6; position:absolute; left:0px; top:0px;">
+    </canvas>
+    <canvas id="twsCanvas" style="z-index: 7; position:absolute; left:0px; top:0px;">
+    </canvas>
+    <canvas id="sogCanvas" style="z-index: 8; position:absolute; left:0px; top:0px;">
+    </canvas>
+    <canvas id="twdCanvas" style="z-index: 9; position:absolute; left:0px; top:0px;">
+    </canvas>
 </div>
 
 <script type="text/javascript">
-//var droid = new Android();
 
-function startNmea()
-{
-//  var bluetoothConnection =  droid.bluetoothConnect('00001101-0000-1000-8000-00805F9B34FB')
-//  droid.makeToast("Connected")    
-  tickData()
-}
+    function startNmea() {
+//  var bluetoothConnection =  droid.bluetoothConnect('00001101-0000-1000-8000-00805F9B34FB')
+//  droid.makeToast("Connected")    
+        tickData()
+    }
 
-function showNone()
-{
-}
+    function showNone() {
+    }
 
-function tickData()
-{
-   // while(droid.bluetoothReadReady())
-   {
-//    var line = droid.bluetoothReadLine().result
-//    if(line == null )alert(line)
-    acceptNmea( "$WIMWV,39,R,1.3,M,A*06")
-   }
-  setTimeout(tickData,100);
-}
+    function tickData() {
+        // while(droid.bluetoothReadReady())
+        {
+//    var line = droid.bluetoothReadLine().result
+//    if(line == null )alert(line)
+//     acceptNmea( "$WIMWV,39,R,1.3,M,A*06")
+        }
+        requestData().then((data) => {
+                if (data.sensor === "NO_MAGNET" || data.sensor === "ERROR") {
+                    drawAws(data.sensor);
+                    drawAwa(data.sensor);
+                } else {
+                    drawAwa(data.angle)
+                    drawAws(data.speed)
+                }
+            }
+        )
+        setTimeout(tickData, 500);
+    }
 
-function acceptNmea(s)
-{
+    async function requestData() {
+        const response = await fetch(
+            url = "http://yanus.wind/data?" + Math.random(),
+            init = {
+                method: "GET",
+                mode: "no-cors",
+                cache: "no-cache",
+                redirect: "follow",
+            }
+        )
+        const windData = await response.json()
+        return windData
+    }
+
+    function acceptNmea(s) {
 //Strip checksum
-   s = s.split("*")[0]
-   var data = s.split(",")
-   switch(data[0]) {
-      case "$GPRMC":
-          //ACTUAL position
-     var speed = data[2]=="A" ? Math.round(parseFloat(data[7])*10)/10 + "kt" : null;
-    drawSog(speed)
-    break;
-     case "$WIMWV":
-    var angle = null;
-    var speed = null;
-    if(data[5]=="A")
-    {
-        var angle = Math.round(parseFloat(data[1]))
-        var speed = parseFloat(data[3])
-        switch(data[4])
-        {
-            case "N": speed *= 1.852/3.6; break;
-            case "K": speed /= 3.6; break;
-        }
-        var speed = Math.round(speed*10)/10
-    }
-    switch(data[2])
-    {
-        case "R": drawAwa(angle);drawAws(speed); break;
-        case "T": drawTwa(angle);drawTws(speed); break;
-    }
-    }
-}
+        s = s.split("*")[0]
+        var data = s.split(",")
+        switch (data[0]) {
+            case "$GPRMC":
+                //ACTUAL position
+                var speed = data[2] == "A" ? Math.round(parseFloat(data[7]) * 10) / 10 + "kt" : null;
+                drawSog(speed)
+                break;
+            case "$WIMWV":
+                var angle = null;
+                var speed = null;
+                if (data[5] == "A") {
+                    var angle = Math.round(parseFloat(data[1]))
+                    var speed = parseFloat(data[3])
+                    switch (data[4]) {
+                        case "N":
+                            speed *= 1.852 / 3.6;
+                            break;
+                        case "K":
+                            speed /= 3.6;
+                            break;
+                    }
+                    var speed = Math.round(speed * 10) / 10
+                }
+                switch (data[2]) {
+                    case "R":
+                        drawAwa(angle);
+                        drawAws(speed);
+                        break;
+                    case "T":
+                        drawTwa(angle);
+                        drawTws(speed);
+                        break;
+                }
+        }
+    }
 
-    /*
-     * Public API
-     *
-     * drawAwa(35);
-     * drawTwa(40);
-     * drawAws(14.1);
-     * drawTws(11.2);
-     * drawSog(173.5);
-     * drawTwd(45.5);
-     *
-     */
+    /*
+     * Public API
+     *
+     * drawAwa(35);
+     * drawTwa(40);
+     * drawAws(14.1);
+     * drawTws(11.2);
+     * drawSog(173.5);
+     * drawTwd(45.5);
+     *
+     */
 
-    /*
-     * Predefined constants calculated on load
-     *
-     */
-    var WIDTH;
-    var HEIGHT;
+    /*
+     * Predefined constants calculated on load
+     *
+     */
+    var WIDTH;
+    var HEIGHT;
 
-    var CENTER_X;   
-    var CENTER_Y;
+    var CENTER_X;
+    var CENTER_Y;
 
-    var TOTAL_RADIUS;
-    var TOTAL_DIAMETER;
+    var TOTAL_RADIUS;
+    var TOTAL_DIAMETER;
 
-    var SCALE_SIZE;
-    var OUTER_BORDER_SIZE;
-    var INNER_BORDER_SIZE;
+    var SCALE_SIZE;
+    var OUTER_BORDER_SIZE;
+    var INNER_BORDER_SIZE;
 
-    var CLOCK_FACE_RADIUS;
-   
-    var DATA_TOP_LEFT_X;
-    var DATA_TOP_LEFT_Y;
-    var DATA_BOTTOM_RIGHT_X;
-    var DATA_BOTTOM_RIGHT_Y;
-    var DATA_WIDTH;
-    var DATA_HEIGHT;
-   
-    var AWA_TEXT_PROPS;
-   
-    var BODY_CANVAS;
-    var AWA_CANVAS;
-    var AWA_DISPLAY_CANVAS;
-    var AWA_DISPLAY_DATA_CANVAS;
-    var TWA_CANVAS;
-    var AWS_CANVAS;
-    var TWS_CANVAS;
-    var SOG_CANVAS;
-    var TWD_CANVAS;
-   
+    var CLOCK_FACE_RADIUS;
 
-    function initConstants() {
-        var canvasLayeredContainer = document.getElementById("canvasLayeredContainer");
-        WIDTH = canvasLayeredContainer.offsetWidth;
-        HEIGHT = canvasLayeredContainer.offsetHeight;
-        if (HEIGHT >= WIDTH) {
-            CENTER_X = WIDTH / 2;
-            CENTER_Y = CENTER_X;
-        } else {
-            CENTER_Y = HEIGHT / 2;
-            CENTER_X = CENTER_Y;
-        }
-        TOTAL_RADIUS = Math.min(CENTER_X, CENTER_Y);
-        TOTAL_DIAMETER = 2 * TOTAL_RADIUS;
-        SCALE_SIZE = TOTAL_DIAMETER * 0.07;
-        OUTER_BORDER_SIZE = TOTAL_DIAMETER * 0.01;
-        INNER_BORDER_SIZE = TOTAL_DIAMETER * 0.005;
-        CLOCK_FACE_RADIUS = TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE - INNER_BORDER_SIZE;
-        if (HEIGHT >= WIDTH) {
-            DATA_TOP_LEFT_X = 0;
-            DATA_TOP_LEFT_Y = TOTAL_DIAMETER * 0.8;
-            DATA_BOTTOM_RIGHT_X = WIDTH;
-            DATA_BOTTOM_RIGHT_Y = HEIGHT;
-        } else {
-            DATA_TOP_LEFT_X = TOTAL_DIAMETER * 0.8;
-            DATA_TOP_LEFT_Y = 0;
-            DATA_BOTTOM_RIGHT_X = WIDTH;
-            DATA_BOTTOM_RIGHT_Y = HEIGHT;
-        }
-        DATA_WIDTH = DATA_BOTTOM_RIGHT_X - DATA_TOP_LEFT_X;
-        DATA_HEIGHT = DATA_BOTTOM_RIGHT_Y - DATA_TOP_LEFT_Y;
-        AWA_TEXT_PROPS = CLOCK_FACE_RADIUS * 0.45 + "px Sans";
-    }
-   
-    function initCanvases() {
-        BODY_CANVAS = document.getElementById("bodyCanvas");
-        BODY_CANVAS.width = WIDTH;
-        BODY_CANVAS.height = HEIGHT;
-           
-        AWA_CANVAS = document.getElementById("awaCanvas");
-        AWA_CANVAS.width = WIDTH;
-        AWA_CANVAS.height = HEIGHT;
-       
-        AWA_DISPLAY_CANVAS = document.getElementById("awaDisplayCanvas");
-        AWA_DISPLAY_CANVAS.width = WIDTH;
-        AWA_DISPLAY_CANVAS.height = HEIGHT;
-       
-        AWA_DISPLAY_DATA_CANVAS = document.getElementById("awaDisplayDataCanvas");
-        AWA_DISPLAY_DATA_CANVAS.width = WIDTH;
-        AWA_DISPLAY_DATA_CANVAS.height = HEIGHT;
-       
-        TWA_CANVAS = document.getElementById("twaCanvas");
-        TWA_CANVAS.width = WIDTH;
-        TWA_CANVAS.height = HEIGHT;
-       
-        AWS_CANVAS = document.getElementById("awsCanvas");
-        AWS_CANVAS.width = WIDTH;
-        AWS_CANVAS.height = HEIGHT;
-       
-        TWS_CANVAS = document.getElementById("twsCanvas");
-        TWS_CANVAS.width = WIDTH;
-        TWS_CANVAS.height = HEIGHT;
+    var DATA_TOP_LEFT_X;
+    var DATA_TOP_LEFT_Y;
+    var DATA_BOTTOM_RIGHT_X;
+    var DATA_BOTTOM_RIGHT_Y;
+    var DATA_WIDTH;
+    var DATA_HEIGHT;
 
-        SOG_CANVAS = document.getElementById("sogCanvas");
-        SOG_CANVAS.width = WIDTH;
-        SOG_CANVAS.height = HEIGHT;
-       
-        TWD_CANVAS = document.getElementById("twdCanvas");
-        TWD_CANVAS.width = WIDTH;
-        TWD_CANVAS.height = HEIGHT;
-    }
-   
-    function init() {
-        initConstants();
-        initCanvases();
-       
-        drawBody();
-        drawAwaDisplay();
-     
-    }
-   
-   
-    function drawAws(aws) {
-        _drawAws(AWS_CANVAS, aws == null ? "" : aws);
-    }
-   
-    function _drawAws(canvas, aws) {
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, WIDTH , HEIGHT);
+    var AWA_TEXT_PROPS;
 
-        context.fillStyle = "#000000";
-        context.textAlign = "left";
+    var BODY_CANVAS;
+    var AWA_CANVAS;
+    var AWA_DISPLAY_CANVAS;
+    var AWA_DISPLAY_DATA_CANVAS;
+    var TWA_CANVAS;
+    var AWS_CANVAS;
+    var TWS_CANVAS;
+    var SOG_CANVAS;
+    var TWD_CANVAS;
 
-        context.textBaseline = "middle";
-        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
-        var metrics = context.measureText("77");
-        var awsMaxWidth = metrics.width;
-        context.fillText(aws, DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.65, awsMaxWidth);
-        context.textBaseline = "top";
-        context.font = DATA_HEIGHT * 0.09 + "px Sans";
-        context.fillText("AWS \u33a7", DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.55);
-    }
 
-    function drawTws(tws) {
-        _drawTws(TWS_CANVAS, tws == null ? "" : tws);
-    }
-   
-    function _drawTws(canvas, tws) {
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, WIDTH , HEIGHT);
+    function initConstants() {
+        var canvasLayeredContainer = document.getElementById("canvasLayeredContainer");
+        WIDTH = canvasLayeredContainer.offsetWidth;
+        HEIGHT = canvasLayeredContainer.offsetHeight;
+        if (HEIGHT >= WIDTH) {
+            CENTER_X = WIDTH / 2;
+            CENTER_Y = CENTER_X;
+        } else {
+            CENTER_Y = HEIGHT / 2;
+            CENTER_X = CENTER_Y;
+        }
+        TOTAL_RADIUS = Math.min(CENTER_X, CENTER_Y);
+        TOTAL_DIAMETER = 2 * TOTAL_RADIUS;
+        SCALE_SIZE = TOTAL_DIAMETER * 0.07;
+        OUTER_BORDER_SIZE = TOTAL_DIAMETER * 0.01;
+        INNER_BORDER_SIZE = TOTAL_DIAMETER * 0.005;
+        CLOCK_FACE_RADIUS = TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE - INNER_BORDER_SIZE;
+        if (HEIGHT >= WIDTH) {
+            DATA_TOP_LEFT_X = 0;
+            DATA_TOP_LEFT_Y = TOTAL_DIAMETER * 0.8;
+            DATA_BOTTOM_RIGHT_X = WIDTH;
+            DATA_BOTTOM_RIGHT_Y = HEIGHT;
+        } else {
+            DATA_TOP_LEFT_X = TOTAL_DIAMETER * 0.8;
+            DATA_TOP_LEFT_Y = 0;
+            DATA_BOTTOM_RIGHT_X = WIDTH;
+            DATA_BOTTOM_RIGHT_Y = HEIGHT;
+        }
+        DATA_WIDTH = DATA_BOTTOM_RIGHT_X - DATA_TOP_LEFT_X;
+        DATA_HEIGHT = DATA_BOTTOM_RIGHT_Y - DATA_TOP_LEFT_Y;
+        AWA_TEXT_PROPS = CLOCK_FACE_RADIUS * 0.45 + "px Sans";
+    }
 
-        context.fillStyle = "#000000";
-        context.textAlign = "left";
+    function initCanvases() {
+        BODY_CANVAS = document.getElementById("bodyCanvas");
+        BODY_CANVAS.width = WIDTH;
+        BODY_CANVAS.height = HEIGHT;
 
-        context.textBaseline = "middle";
-        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
-        var metrics = context.measureText("77");
-        var twsMaxWidth = metrics.width;
-        context.fillText(tws, DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.3, twsMaxWidth);
-        context.textBaseline = "top";
-        context.font = DATA_HEIGHT * 0.09 + "px Sans";
-        context.fillText("TWS \u33a7", DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.2 );
-    }
-   
-    function drawSog(sog) {
-        _drawSog(SOG_CANVAS, sog == null ? "" : sog);
-    }
-   
-    function _drawSog(canvas, sog) {
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, WIDTH , HEIGHT);
+        AWA_CANVAS = document.getElementById("awaCanvas");
+        AWA_CANVAS.width = WIDTH;
+        AWA_CANVAS.height = HEIGHT;
 
-        context.fillStyle = "#000000";
-        context.textAlign = "left";
+        AWA_DISPLAY_CANVAS = document.getElementById("awaDisplayCanvas");
+        AWA_DISPLAY_CANVAS.width = WIDTH;
+        AWA_DISPLAY_CANVAS.height = HEIGHT;
 
-        context.textBaseline = "middle";
-        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
-        var metrics = context.measureText("77");
-        var sogMaxWidth = metrics.width;
-        context.fillText(sog, DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.65, sogMaxWidth);
-        context.textBaseline = "top";
-        context.font = DATA_HEIGHT * 0.09 + "px Sans";
-        context.fillText("SoG kt", DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.55);
-    }
-   
-    function drawTwd(twd) {
-        _drawTwd(TWD_CANVAS, twd == null ? "" : twd);
-    }
+        AWA_DISPLAY_DATA_CANVAS = document.getElementById("awaDisplayDataCanvas");
+        AWA_DISPLAY_DATA_CANVAS.width = WIDTH;
+        AWA_DISPLAY_DATA_CANVAS.height = HEIGHT;
 
-    function _drawTwd(canvas, twd) {
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, WIDTH , HEIGHT);
+        TWA_CANVAS = document.getElementById("twaCanvas");
+        TWA_CANVAS.width = WIDTH;
+        TWA_CANVAS.height = HEIGHT;
 
-        context.fillStyle = "#000000";
-        context.textAlign = "left";
+        AWS_CANVAS = document.getElementById("awsCanvas");
+        AWS_CANVAS.width = WIDTH;
+        AWS_CANVAS.height = HEIGHT;
 
-        context.textBaseline = "middle";
-        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
-        var metrics = context.measureText("77");
-        var twdMaxWidth = metrics.width;
-        context.fillText(twd, DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.3, twdMaxWidth);
-        context.textBaseline = "top";
-        context.font = DATA_HEIGHT * 0.09 + "px Sans";
-        context.fillText("TWD \u00B0", DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.2 );
-    }
+        TWS_CANVAS = document.getElementById("twsCanvas");
+        TWS_CANVAS.width = WIDTH;
+        TWS_CANVAS.height = HEIGHT;
 
-    function drawAwa(awa) {
-        _drawAwaArrow(AWA_CANVAS, awa);
-        _drawAwaNumber(AWA_DISPLAY_DATA_CANVAS, awa);
-    }
+        SOG_CANVAS = document.getElementById("sogCanvas");
+        SOG_CANVAS.width = WIDTH;
+        SOG_CANVAS.height = HEIGHT;
 
-    function _drawAwaNumber(canvas, awa) {
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, WIDTH, HEIGHT);
-        if (awa != null) {
-            context.save();
-            context.translate(CENTER_X, CENTER_Y);
-            context.font = AWA_TEXT_PROPS;
-            context.fillStyle="#000000";
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            var metrics = context.measureText("777");
-            context.fillText(awa > 180 ? 360 - awa : awa, 0, 0, metrics.width);
-            context.restore();
-        }
-    }
+        TWD_CANVAS = document.getElementById("twdCanvas");
+        TWD_CANVAS.width = WIDTH;
+        TWD_CANVAS.height = HEIGHT;
+    }
 
-    function _drawAwaArrow(canvas, awa) {
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, WIDTH, HEIGHT);
-        if(awa != null) {
-            context.save();
-            context.translate(CENTER_X, CENTER_Y);
-            context.save();
-            context.rotate(awa * Math.PI / 180);
-            context.font = "bold " + SCALE_SIZE * 0.8 + "px Sans";
-            context.beginPath();
-            context.strokeStyle = "#000000";
-            context.moveTo(0,0);
-            context.arc(0, 0, TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE, -Math.PI * (0.5 + 1/20), Math.PI * (1/20 - 0.5));
-            context.fillStyle="#394da4";
-            context.fill();
-            context.lineWidth=INNER_BORDER_SIZE;
-            context.lineTo(0,0);
-            context.stroke();
-            context.textAlign = "center";
-            context.textBaseline = "top";
-            context.fillStyle="#eeeeee";
-            context.fillText("\u0412", 0, -(TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE) * 0.78);
-            context.beginPath();
-            context.moveTo(0,0)
-            context.moveTo(0, -(TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE) * 0.8);
-            context.lineTo(0, -CLOCK_FACE_RADIUS);
-            context.lineWidth = INNER_BORDER_SIZE * 1.5;
-            context.strokeStyle = "#eeeeee";
-            context.stroke();
-            context.restore();
-            context.restore();
-        }
-    }
+    function init() {
+        initConstants();
+        initCanvases();
 
-    function drawTwa(twa) {
-        _drawTwa(TWA_CANVAS, twa);
-    }
-   
-    function _drawTwa(canvas, twa) {
-        var context = canvas.getContext("2d");
-        context.clearRect(0, 0, WIDTH, HEIGHT);
-        context.save();
-        context.translate(CENTER_X, CENTER_Y);
-        context.font = "bold " + SCALE_SIZE * 0.6 + "px Sans";
-        if(twa != null) {
-            context.save();
-            context.rotate(twa * Math.PI / 180);
-            context.beginPath();
-            context.moveTo(SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE);
-            context.lineTo(-SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE);
-            context.lineTo(-SCALE_SIZE / 2 , -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
-            context.lineTo(-SCALE_SIZE * 0.8, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
-            context.lineTo(0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE + INNER_BORDER_SIZE + SCALE_SIZE);
-            context.lineTo(SCALE_SIZE * 0.8, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
-            context.lineTo(SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
-            context.lineTo(SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE);
-            context.closePath();
-            context.lineWidth = INNER_BORDER_SIZE * 1.5;
-            context.stroke();
-            context.fillStyle = "#4474b4";
-            context.fill();
-            context.textAlign = "center";
-            context.textBaseline = "bottom";
-            context.fillStyle="#EEEEEE";
-            context.fillText("\u0418", 0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE);
-            context.restore();
-        }
+        drawBody();
+        drawAwaDisplay();
 
-        context.restore();
-    }
-   
-    function drawAwaDisplay() {
-        var canvas = AWA_DISPLAY_CANVAS;
-        var context = canvas.getContext("2d");
-        context.save();
-        context.translate(CENTER_X, CENTER_Y)
-        context.font = AWA_TEXT_PROPS;
-        var metrics = context.measureText("777");
-        var recWidth = metrics.width * 1.1;
-        var recHeight = recWidth / 2;
-        context.fillStyle="#ffffff";
-        roundRect(context, -recWidth / 2, -recHeight / 2, recWidth, recHeight, 0, true, true);
-        context.restore();
-    }
-   
-    function drawBody() {
-        var canvas = BODY_CANVAS;
-        var context = canvas.getContext("2d");
-           
-        context.clearRect(0, 0, WIDTH , HEIGHT);
-       
-        // Draw bottom rect
-        context.fillStyle = "#ffffff";
-        roundRect(context, DATA_TOP_LEFT_X, DATA_TOP_LEFT_Y, DATA_BOTTOM_RIGHT_X - DATA_TOP_LEFT_X, DATA_BOTTOM_RIGHT_Y - DATA_TOP_LEFT_Y, 30, true, false);
+    }
 
-        context.beginPath();
-        context.arc(CENTER_X, CENTER_Y, TOTAL_RADIUS, 0, 2 * Math.PI, false);
-        context.fillStyle = "#000000";
-        context.fill();
-   
-        context.beginPath();
-        context.arc(CENTER_X, CENTER_Y, TOTAL_RADIUS - OUTER_BORDER_SIZE, 0, 2 * Math.PI, false);
-        var gradient = context.createLinearGradient(0, CENTER_Y, TOTAL_DIAMETER, CENTER_Y);
-        gradient.addColorStop(0, "#800000");
-        gradient.addColorStop(1, "#008000");
-        context.fillStyle = gradient;
-        context.fill();
-   
-        context.beginPath();
-        context.arc(CENTER_X, CENTER_Y, TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE, 0, 2 * Math.PI, false);
-        context.fillStyle = "#000000";
-        context.fill();
-   
-        context.beginPath();
-        context.arc(CENTER_X, CENTER_Y, CLOCK_FACE_RADIUS, 0, 2 * Math.PI, false);
-        context.fillStyle = "#ffffff";
-        context.fill();
-   
-        context.save();
-        context.translate(CENTER_X, CENTER_Y)
-   
-        context.font = "bold " + SCALE_SIZE * 0.75 + "px Sans";
-        context.fillStyle="#FFFFFF"
-        context.textAlign = "center";
-        for (var a = 0; a <= 180; a+=30) {
-            context.save();
-            context.rotate(a / 180 * Math.PI);
-            context.textBaseline = "middle";
-            context.fillText(a, 0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE / 2 + SCALE_SIZE * 0.08);
-            context.restore();
-            if (a != 0 && a != 180) {
-                context.save();
-                context.rotate(-a / 180 * Math.PI);
-                context.textBaseline = "middle";
-                context.fillText(a, 0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE / 2 + SCALE_SIZE * 0.08);
-                context.restore();
-            }
-        }
 
-        context.fillStyle="#ffffff";
-        for (var a = 0 ; a < 360; a+=10) {
-            if(a % 30 != 0) {
-                context.save();
-                context.beginPath();
-                context.rotate(a * Math.PI / 180);
-                context.arc(0, TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE / 2, WIDTH / 200, 0, 2 * Math.PI);
-                context.fill();
-                context.restore();
-            }
-        }
+    function drawAws(aws) {
+        _drawAws(AWS_CANVAS, aws == null ? "" : aws);
+    }
 
-        context.strokeStyle = "#dddddd";
-        context.lineWidth = 1;
-        context.beginPath();
-        context.moveTo(-CLOCK_FACE_RADIUS, 0);
-        context.lineTo(CLOCK_FACE_RADIUS, 0);
-        context.closePath();
-        context.stroke();
-        context.beginPath();
-        context.moveTo(0, -CLOCK_FACE_RADIUS);
-        context.lineTo(0, CLOCK_FACE_RADIUS);
-        context.closePath();
-        context.stroke();
-       
-        context.beginPath();
-        context.moveTo(-CLOCK_FACE_RADIUS / 5, CLOCK_FACE_RADIUS * 3 / 4);
-        context.bezierCurveTo(-CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 3, -CLOCK_FACE_RADIUS / 3, -CLOCK_FACE_RADIUS / 3, 0, -CLOCK_FACE_RADIUS * 3 / 4);
-        context.bezierCurveTo(CLOCK_FACE_RADIUS / 3, -CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 5, CLOCK_FACE_RADIUS * 3 / 4);
-        context.lineTo(-CLOCK_FACE_RADIUS / 5, CLOCK_FACE_RADIUS * 3 / 4);
-        context.closePath();
-        context.strokeStyle = "#dddddd";
-        context.lineWidth = 10;
-        context.stroke();
-        context.fillStyle = "#ffffff";
-        context.fill();
+    function _drawAws(canvas, aws) {
+        var context = canvas.getContext("2d");
+        context.clearRect(0, 0, WIDTH, HEIGHT);
 
-        context.restore();
-    }
+        context.fillStyle = "#000000";
+        context.textAlign = "left";
 
-    function roundRect(context, x, y, width, height, TOTAL_RADIUS, fill, stroke) {
-        if (typeof stroke == "undefined" ) {
-            stroke = true;
-        }
-        if (typeof TOTAL_RADIUS === "undefined") {
-            TOTAL_RADIUS = 5;
-        }
-        context.beginPath();
-        context.moveTo(x + TOTAL_RADIUS, y);
-        context.lineTo(x + width - TOTAL_RADIUS, y);
-        context.quadraticCurveTo(x + width, y, x + width, y + TOTAL_RADIUS);
-        context.lineTo(x + width, y + height - TOTAL_RADIUS);
-        context.quadraticCurveTo(x + width, y + height, x + width - TOTAL_RADIUS, y + height);
-        context.lineTo(x + TOTAL_RADIUS, y + height);
-        context.quadraticCurveTo(x, y + height, x, y + height - TOTAL_RADIUS);
-        context.lineTo(x, y + TOTAL_RADIUS);
-        context.quadraticCurveTo(x, y, x + TOTAL_RADIUS, y);
-        context.closePath();
-        if (stroke) {
-            context.stroke();
-        }
-        if (fill) {
-            context.fill();
-        }       
-    }
+        context.textBaseline = "middle";
+        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
+        var metrics = context.measureText("77");
+        var awsMaxWidth = metrics.width;
+        context.fillText(aws, DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.65, awsMaxWidth);
+        context.textBaseline = "top";
+        context.font = DATA_HEIGHT * 0.09 + "px Sans";
+        context.fillText("AWS \u33a7", DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.55);
+    }
 
-    init();
+    function drawTws(tws) {
+        _drawTws(TWS_CANVAS, tws == null ? "" : tws);
+    }
+
+    function _drawTws(canvas, tws) {
+        var context = canvas.getContext("2d");
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+
+        context.fillStyle = "#000000";
+        context.textAlign = "left";
+
+        context.textBaseline = "middle";
+        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
+        var metrics = context.measureText("77");
+        var twsMaxWidth = metrics.width;
+        context.fillText(tws, DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.3, twsMaxWidth);
+        context.textBaseline = "top";
+        context.font = DATA_HEIGHT * 0.09 + "px Sans";
+        context.fillText("TWS \u33a7", DATA_WIDTH / 13, HEIGHT - DATA_HEIGHT * 0.2);
+    }
+
+    function drawSog(sog) {
+        _drawSog(SOG_CANVAS, sog == null ? "" : sog);
+    }
+
+    function _drawSog(canvas, sog) {
+        var context = canvas.getContext("2d");
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+
+        context.fillStyle = "#000000";
+        context.textAlign = "left";
+
+        context.textBaseline = "middle";
+        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
+        var metrics = context.measureText("77");
+        var sogMaxWidth = metrics.width;
+        context.fillText(sog, DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.65, sogMaxWidth);
+        context.textBaseline = "top";
+        context.font = DATA_HEIGHT * 0.09 + "px Sans";
+        context.fillText("SoG kt", DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.55);
+    }
+
+    function drawTwd(twd) {
+        _drawTwd(TWD_CANVAS, twd == null ? "" : twd);
+    }
+
+    function _drawTwd(canvas, twd) {
+        var context = canvas.getContext("2d");
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+
+        context.fillStyle = "#000000";
+        context.textAlign = "left";
+
+        context.textBaseline = "middle";
+        context.font = "bold " + DATA_WIDTH * 0.15 + "px Sans";
+        var metrics = context.measureText("77");
+        var twdMaxWidth = metrics.width;
+        context.fillText(twd, DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.3, twdMaxWidth);
+        context.textBaseline = "top";
+        context.font = DATA_HEIGHT * 0.09 + "px Sans";
+        context.fillText("TWD \u00B0", DATA_WIDTH / 1.4, HEIGHT - DATA_HEIGHT * 0.2);
+    }
+
+    function drawAwa(awa) {
+        _drawAwaArrow(AWA_CANVAS, awa);
+        _drawAwaNumber(AWA_DISPLAY_DATA_CANVAS, awa);
+    }
+
+    function _drawAwaNumber(canvas, awa) {
+        var context = canvas.getContext("2d");
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+        if (awa != null) {
+            context.save();
+            context.translate(CENTER_X, CENTER_Y);
+            context.font = AWA_TEXT_PROPS;
+            context.fillStyle = "#000000";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            var metrics = context.measureText("777");
+            context.fillText(awa > 180 ? 360 - awa : awa, 0, 0, metrics.width);
+            context.restore();
+        }
+    }
+
+    function _drawAwaArrow(canvas, awa) {
+        var context = canvas.getContext("2d");
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+        if (awa != null) {
+            context.save();
+            context.translate(CENTER_X, CENTER_Y);
+            context.save();
+            context.rotate(awa * Math.PI / 180);
+            context.font = "bold " + SCALE_SIZE * 0.8 + "px Sans";
+            context.beginPath();
+            context.strokeStyle = "#000000";
+            context.moveTo(0, 0);
+            context.arc(0, 0, TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE, -Math.PI * (0.5 + 1 / 20), Math.PI * (1 / 20 - 0.5));
+            context.fillStyle = "#394da4";
+            context.fill();
+            context.lineWidth = INNER_BORDER_SIZE;
+            context.lineTo(0, 0);
+            context.stroke();
+            context.textAlign = "center";
+            context.textBaseline = "top";
+            context.fillStyle = "#eeeeee";
+            context.fillText("\u0412", 0, -(TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE) * 0.78);
+            context.beginPath();
+            context.moveTo(0, 0)
+            context.moveTo(0, -(TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE) * 0.8);
+            context.lineTo(0, -CLOCK_FACE_RADIUS);
+            context.lineWidth = INNER_BORDER_SIZE * 1.5;
+            context.strokeStyle = "#eeeeee";
+            context.stroke();
+            context.restore();
+            context.restore();
+        }
+    }
+
+    function drawTwa(twa) {
+        _drawTwa(TWA_CANVAS, twa);
+    }
+
+    function _drawTwa(canvas, twa) {
+        var context = canvas.getContext("2d");
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+        context.save();
+        context.translate(CENTER_X, CENTER_Y);
+        context.font = "bold " + SCALE_SIZE * 0.6 + "px Sans";
+        if (twa != null) {
+            context.save();
+            context.rotate(twa * Math.PI / 180);
+            context.beginPath();
+            context.moveTo(SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE);
+            context.lineTo(-SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE);
+            context.lineTo(-SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
+            context.lineTo(-SCALE_SIZE * 0.8, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
+            context.lineTo(0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE + INNER_BORDER_SIZE + SCALE_SIZE);
+            context.lineTo(SCALE_SIZE * 0.8, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
+            context.lineTo(SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE * 2 / 3);
+            context.lineTo(SCALE_SIZE / 2, -TOTAL_RADIUS + OUTER_BORDER_SIZE);
+            context.closePath();
+            context.lineWidth = INNER_BORDER_SIZE * 1.5;
+            context.stroke();
+            context.fillStyle = "#4474b4";
+            context.fill();
+            context.textAlign = "center";
+            context.textBaseline = "bottom";
+            context.fillStyle = "#EEEEEE";
+            context.fillText("\u0418", 0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE);
+            context.restore();
+        }
+
+        context.restore();
+    }
+
+    function drawAwaDisplay() {
+        var canvas = AWA_DISPLAY_CANVAS;
+        var context = canvas.getContext("2d");
+        context.save();
+        context.translate(CENTER_X, CENTER_Y)
+        context.font = AWA_TEXT_PROPS;
+        var metrics = context.measureText("777");
+        var recWidth = metrics.width * 1.1;
+        var recHeight = recWidth / 2;
+        context.fillStyle = "#ffffff";
+        roundRect(context, -recWidth / 2, -recHeight / 2, recWidth, recHeight, 0, true, true);
+        context.restore();
+    }
+
+    function drawBody() {
+        var canvas = BODY_CANVAS;
+        var context = canvas.getContext("2d");
+
+        context.clearRect(0, 0, WIDTH, HEIGHT);
+
+        // Draw bottom rect
+        context.fillStyle = "#ffffff";
+        roundRect(context, DATA_TOP_LEFT_X, DATA_TOP_LEFT_Y, DATA_BOTTOM_RIGHT_X - DATA_TOP_LEFT_X, DATA_BOTTOM_RIGHT_Y - DATA_TOP_LEFT_Y, 30, true, false);
+
+        context.beginPath();
+        context.arc(CENTER_X, CENTER_Y, TOTAL_RADIUS, 0, 2 * Math.PI, false);
+        context.fillStyle = "#000000";
+        context.fill();
+
+        context.beginPath();
+        context.arc(CENTER_X, CENTER_Y, TOTAL_RADIUS - OUTER_BORDER_SIZE, 0, 2 * Math.PI, false);
+        var gradient = context.createLinearGradient(0, CENTER_Y, TOTAL_DIAMETER, CENTER_Y);
+        gradient.addColorStop(0, "#800000");
+        gradient.addColorStop(1, "#008000");
+        context.fillStyle = gradient;
+        context.fill();
+
+        context.beginPath();
+        context.arc(CENTER_X, CENTER_Y, TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE, 0, 2 * Math.PI, false);
+        context.fillStyle = "#000000";
+        context.fill();
+
+        context.beginPath();
+        context.arc(CENTER_X, CENTER_Y, CLOCK_FACE_RADIUS, 0, 2 * Math.PI, false);
+        context.fillStyle = "#ffffff";
+        context.fill();
+
+        context.save();
+        context.translate(CENTER_X, CENTER_Y)
+
+        context.font = "bold " + SCALE_SIZE * 0.75 + "px Sans";
+        context.fillStyle = "#FFFFFF"
+        context.textAlign = "center";
+        for (var a = 0; a <= 180; a += 30) {
+            context.save();
+            context.rotate(a / 180 * Math.PI);
+            context.textBaseline = "middle";
+            context.fillText(a, 0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE / 2 + SCALE_SIZE * 0.08);
+            context.restore();
+            if (a != 0 && a != 180) {
+                context.save();
+                context.rotate(-a / 180 * Math.PI);
+                context.textBaseline = "middle";
+                context.fillText(a, 0, -TOTAL_RADIUS + OUTER_BORDER_SIZE + SCALE_SIZE / 2 + SCALE_SIZE * 0.08);
+                context.restore();
+            }
+        }
+
+        context.fillStyle = "#ffffff";
+        for (var a = 0; a < 360; a += 10) {
+            if (a % 30 != 0) {
+                context.save();
+                context.beginPath();
+                context.rotate(a * Math.PI / 180);
+                context.arc(0, TOTAL_RADIUS - OUTER_BORDER_SIZE - SCALE_SIZE / 2, WIDTH / 200, 0, 2 * Math.PI);
+                context.fill();
+                context.restore();
+            }
+        }
+
+        context.strokeStyle = "#dddddd";
+        context.lineWidth = 1;
+        context.beginPath();
+        context.moveTo(-CLOCK_FACE_RADIUS, 0);
+        context.lineTo(CLOCK_FACE_RADIUS, 0);
+        context.closePath();
+        context.stroke();
+        context.beginPath();
+        context.moveTo(0, -CLOCK_FACE_RADIUS);
+        context.lineTo(0, CLOCK_FACE_RADIUS);
+        context.closePath();
+        context.stroke();
+
+        context.beginPath();
+        context.moveTo(-CLOCK_FACE_RADIUS / 5, CLOCK_FACE_RADIUS * 3 / 4);
+        context.bezierCurveTo(-CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 3, -CLOCK_FACE_RADIUS / 3, -CLOCK_FACE_RADIUS / 3, 0, -CLOCK_FACE_RADIUS * 3 / 4);
+        context.bezierCurveTo(CLOCK_FACE_RADIUS / 3, -CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 3, CLOCK_FACE_RADIUS / 5, CLOCK_FACE_RADIUS * 3 / 4);
+        context.lineTo(-CLOCK_FACE_RADIUS / 5, CLOCK_FACE_RADIUS * 3 / 4);
+        context.closePath();
+        context.strokeStyle = "#dddddd";
+        context.lineWidth = 10;
+        context.stroke();
+        context.fillStyle = "#ffffff";
+        context.fill();
+
+        context.restore();
+    }
+
+    function roundRect(context, x, y, width, height, TOTAL_RADIUS, fill, stroke) {
+        if (typeof stroke == "undefined") {
+            stroke = true;
+        }
+        if (typeof TOTAL_RADIUS === "undefined") {
+            TOTAL_RADIUS = 5;
+        }
+        context.beginPath();
+        context.moveTo(x + TOTAL_RADIUS, y);
+        context.lineTo(x + width - TOTAL_RADIUS, y);
+        context.quadraticCurveTo(x + width, y, x + width, y + TOTAL_RADIUS);
+        context.lineTo(x + width, y + height - TOTAL_RADIUS);
+        context.quadraticCurveTo(x + width, y + height, x + width - TOTAL_RADIUS, y + height);
+        context.lineTo(x + TOTAL_RADIUS, y + height);
+        context.quadraticCurveTo(x, y + height, x, y + height - TOTAL_RADIUS);
+        context.lineTo(x, y + TOTAL_RADIUS);
+        context.quadraticCurveTo(x, y, x + TOTAL_RADIUS, y);
+        context.closePath();
+        if (stroke) {
+            context.stroke();
+        }
+        if (fill) {
+            context.fill();
+        }
+    }
+
+    init();
 </script>
 </body>
 </html>

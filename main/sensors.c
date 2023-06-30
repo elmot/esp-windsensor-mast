@@ -60,52 +60,62 @@ _Noreturn void sensor_task(__unused void *args) {
                                                                sizeof(buff), 100);
         if (sensor_status != ESP_OK) {
             angle_info.status = ERROR;
-        }
-        agc = buff[AS5600_REG_AGC];
-        uint8_t status = buff[AS5600_REG_STATUS];
-        if (status & AS5600_STATUS_MD) {
-            if (status & AS5600_STATUS_ML) {
-                angle_info.status = FIELD_TOO_LOW;
-            } else if (status & AS5600_STATUS_MH) {
-                angle_info.status = FIELD_TOO_HIGH;
-            } else {
-                angle_info.status = OK;
-            }
         } else {
-            angle_info.status = NO_MAGNET;
+            agc = buff[AS5600_REG_AGC];
+            uint8_t status = buff[AS5600_REG_STATUS];
+            if (status & AS5600_STATUS_MD) {
+                if (status & AS5600_STATUS_ML) {
+                    angle_info.status = FIELD_TOO_LOW;
+                } else if (status & AS5600_STATUS_MH) {
+                    angle_info.status = FIELD_TOO_HIGH;
+                } else {
+                    angle_info.status = OK;
+                }
+            } else {
+                angle_info.status = NO_MAGNET;
+            }
+            angle_info.last_raw_angle = (buff[AS5600_REG_ANGLE_H] * 256 + buff[AS5600_REG_ANGLE_L]) * 360 / 4096;
+            int angle_sample = (angle_info.last_raw_angle + angle_info.angle_shift) % 360;
+            angle_info.last_angle = angle_sample;
+            averaging_buffer_sin[averaging_idx] = sin(angle_sample * M_PI / 360);
+            averaging_buffer_cos[averaging_idx] = cos(angle_sample * M_PI / 360);
+            averaging_idx = (averaging_idx + 1) % AVERAGING_BUFFER_SIZE;
+            double sum_sin = 0;
+            double sum_cos = 0;
+            for (int i = 0; i < AVERAGING_BUFFER_SIZE; ++i) {
+                sum_sin += averaging_buffer_sin[i];
+                sum_cos += averaging_buffer_cos[i];
+            }
+            angle_info.angle = (360 + (int) round(atan2(sum_sin, sum_cos) * 360 / M_PI)) % 360;
         }
-        angle_info.last_raw_angle = (buff[AS5600_REG_ANGLE_H] * 256 + buff[AS5600_REG_ANGLE_L]) * 360 / 4096;
-        int angle_sample = (angle_info.last_raw_angle + angle_info.angle_shift) % 360;
-        angle_info.last_angle = angle_sample;
-        averaging_buffer_sin[averaging_idx] = sin(angle_sample * M_PI / 360);
-        averaging_buffer_cos[averaging_idx] = cos(angle_sample * M_PI / 360);
-        averaging_idx = (averaging_idx + 1) % AVERAGING_BUFFER_SIZE;
-        double sum_sin = 0;
-        double sum_cos = 0;
-        for (int i = 0; i < AVERAGING_BUFFER_SIZE; ++i) {
-            sum_sin += averaging_buffer_sin[i];
-            sum_cos += averaging_buffer_cos[i];
-        }
-        angle_info.angle = (360 + (int) round(atan2(sum_sin, sum_cos) * 360 / M_PI)) % 360;
         vTaskDelayUntil(&time, configTICK_RATE_HZ * angle_info.average_time_seconds / AVERAGING_BUFFER_SIZE)
     }
+}
+
+static inline const char *sensor_status() {
+    switch (angle_info.status) {
+        case NO_MAGNET:
+            return "NO_MAGNET";
+            break;
+        case FIELD_TOO_LOW:
+            return "TOO_LOW";
+            break;
+        case FIELD_TOO_HIGH:
+            return "TOO_HIGH";
+            break;
+        case OK:
+            return "FINE";
+            break;
+        default:
+            return "ERROR";
+    }
+
 }
 
 _Noreturn void log_task(__unused void *args) {
     TickType_t time = xTaskGetTickCount();
     while (1) {
-        char *statusStr;
-        switch (angle_info.status) {
-            case NO_MAGNET: statusStr = "NO MAGNET";
-                break;
-            case FIELD_TOO_LOW: statusStr = "TOO LOW";
-                break;
-            case FIELD_TOO_HIGH: statusStr = "TOO HIGH";
-                break;
-            case OK: statusStr = "FINE";
-                break;
-            default: statusStr = "ERROR";
-        }
+        const char *statusStr = sensor_status();
         ESP_LOGI(TAG_ANGLE, "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; AVERAGE_ANGLE: %3d",
                  statusStr,
                  agc,
@@ -115,4 +125,10 @@ _Noreturn void log_task(__unused void *args) {
 
         vTaskDelayUntil(&time, configTICK_RATE_HZ)
     }
+}
+
+int sensor_response(char *buffer, ssize_t capacity) {
+    const char *statusStr = sensor_status();
+    return sniprintf(buffer, capacity, "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,\"speed\":2}", statusStr, agc,
+                     angle_info.angle);
 }
