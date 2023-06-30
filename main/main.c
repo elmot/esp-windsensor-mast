@@ -18,16 +18,12 @@
 #include "esp_netif.h"
 #include "lwip/inet.h"
 
-#include "esp_http_server.h"
 #include "dns_server.h"
 
 #include "windsensor.h"
 #include "freertos/task.h"
 
-extern const char root_start[] asm("_binary_root_html_start");
-extern const char root_end[] asm("_binary_root_html_end");
-
-static const char *TAG = "example";
+static const char *TAG = "windsensor";
 
 static void wifi_event_handler(__unused void *arg,__unused esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
@@ -75,36 +71,6 @@ static void wifi_init_softap(void)
              CONFIG_ESP_WIFI_SSID, CONFIG_ESP_WIFI_PASSWORD);
 }
 
-// HTTP GET Handler
-static esp_err_t root_get_handler(httpd_req_t *req)
-{
-    const ssize_t root_len = root_end - root_start;
-    ESP_LOGI(TAG, "Serve root: %s", req->uri);
-    httpd_resp_set_type(req, "text/html");
-    httpd_resp_send(req, root_start, root_len);
-
-    return ESP_OK;
-}
-
-static const httpd_uri_t root = {
-    .uri = "/",
-    .method = HTTP_GET,
-    .handler = root_get_handler
-};
-
-// HTTP Error (404) Handler - Redirects all requests to the root page
-esp_err_t http_404_error_handler(httpd_req_t *req, __unused httpd_err_code_t err)
-{
-    // Set status
-    httpd_resp_set_status(req, "302 Temporary Redirect");
-    // Redirect to the "/" root directory
-    httpd_resp_set_hdr(req, "Location", "/");
-    // iOS requires content in the response to detect a captive portal, simply redirecting is not sufficient.
-    httpd_resp_send(req, "Redirect to the captive portal", HTTPD_RESP_USE_STRLEN);
-
-    ESP_LOGI(TAG, "Redirecting to root: %s", req->uri);
-    return ESP_OK;
-}
 
 static httpd_handle_t start_webserver(void)
 {
@@ -118,8 +84,7 @@ static httpd_handle_t start_webserver(void)
     if (httpd_start(&server, &config) == ESP_OK) {
         // Set URI handlers
         ESP_LOGI(TAG, "Registering URI handlers");
-        httpd_register_uri_handler(server, &root);
-        httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, http_404_error_handler);
+        registerHttpHandlers(server);
     }
     return server;
 }
