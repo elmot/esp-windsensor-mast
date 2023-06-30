@@ -158,4 +158,5 @@ void app_main(void)
     start_dns_server();
 
     xTaskCreate(sensor_task,"Sensor Task",4096,NULL,10,&sensor_task_handle);
+    xTaskCreate(log_task,"Sensor Task",4096,NULL,10,&sensor_task_handle);
 }

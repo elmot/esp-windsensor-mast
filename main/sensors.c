@@ -1,6 +1,7 @@
 #include "windsensor.h"
 #include "driver/i2c.h"
 #include "esp_log.h"
+#include "math.h"
 
 #define I2C_MASTER_RX_BUF_DISABLE 0
 #define I2C_MASTER_TX_BUF_DISABLE 0
@@ -24,11 +25,17 @@
 #define AS5600_STATUS_ML (0x10)
 #define AS5600_STATUS_MD (0x20)
 
+#define AVERAGING_BUFFER_SIZE  (20)
 static const char *TAG_ANGLE = "mech-windsensor";
 
-void angle_loop();
+static double averaging_buffer_sin[AVERAGING_BUFFER_SIZE];
+static double averaging_buffer_cos[AVERAGING_BUFFER_SIZE];
+static size_t averaging_idx = 0;
 
-void sensor_task(void* args) {
+volatile angle_info_t angle_info = {.average_time_seconds = 2, .angle_shift = 1};
+static volatile uint16_t agc;
+
+_Noreturn void sensor_task(__unused void *args) {
     ESP_LOGI(TAG_ANGLE, "Initialize i2c");
     i2c_config_t conf = {
             .mode = I2C_MODE_MASTER,
@@ -46,22 +53,66 @@ void sensor_task(void* args) {
     ESP_ERROR_CHECK(
             i2c_driver_install(I2C_MASTER_PORT, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0));
     ESP_LOGI(TAG_ANGLE, "i2c initialization done");
+    TickType_t time = xTaskGetTickCount();
     while (1) {
-        angle_loop();
-        vTaskDelay(50);
+        uint8_t buff[AS5600_OUT_REG_SIZE] = {AS5600_OUT_REG};//Start reading from status, 18 bytes
+        esp_err_t sensor_status = i2c_master_write_read_device(I2C_MASTER_PORT, AS560x_ADDR, buff, 1, buff,
+                                                               sizeof(buff), 100);
+        if (sensor_status != ESP_OK) {
+            angle_info.status = ERROR;
+        }
+        agc = buff[AS5600_REG_AGC];
+        uint8_t status = buff[AS5600_REG_STATUS];
+        if (status & AS5600_STATUS_MD) {
+            if (status & AS5600_STATUS_ML) {
+                angle_info.status = FIELD_TOO_LOW;
+            } else if (status & AS5600_STATUS_MH) {
+                angle_info.status = FIELD_TOO_HIGH;
+            } else {
+                angle_info.status = OK;
+            }
+        } else {
+            angle_info.status = NO_MAGNET;
+        }
+        angle_info.last_raw_angle = (buff[AS5600_REG_ANGLE_H] * 256 + buff[AS5600_REG_ANGLE_L]) * 360 / 4096;
+        int angle_sample = (angle_info.last_raw_angle + angle_info.angle_shift) % 360;
+        angle_info.last_angle = angle_sample;
+        averaging_buffer_sin[averaging_idx] = sin(angle_sample * M_PI / 360);
+        averaging_buffer_cos[averaging_idx] = cos(angle_sample * M_PI / 360);
+        averaging_idx = (averaging_idx + 1) % AVERAGING_BUFFER_SIZE;
+        double sum_sin = 0;
+        double sum_cos = 0;
+        for (int i = 0; i < AVERAGING_BUFFER_SIZE; ++i) {
+            sum_sin += averaging_buffer_sin[i];
+            sum_cos += averaging_buffer_cos[i];
+        }
+        angle_info.angle = (360 + (int) round(atan2(sum_sin, sum_cos) * 360 / M_PI)) % 360;
+        vTaskDelayUntil(&time, configTICK_RATE_HZ * angle_info.average_time_seconds / AVERAGING_BUFFER_SIZE)
     }
 }
 
-void angle_loop() {
-    uint8_t buff[AS5600_OUT_REG_SIZE] = {AS5600_OUT_REG};//Start reading from status, 18 bytes
-    ESP_ERROR_CHECK(i2c_master_write_read_device(I2C_MASTER_PORT, AS560x_ADDR, buff, 1, buff, sizeof(buff), 100));
-    char *statusStr = "NO MAGNET";
-    uint8_t status = buff[AS5600_REG_STATUS];
-    if ( status & AS5600_STATUS_MD) {
-        if (status & AS5600_STATUS_ML) statusStr = "TOO LOW";
-        else if (status & AS5600_STATUS_MH) statusStr = "TOO HIGH";
-        else statusStr = "OK";
+_Noreturn void log_task(__unused void *args) {
+    TickType_t time = xTaskGetTickCount();
+    while (1) {
+        char *statusStr;
+        switch (angle_info.status) {
+            case NO_MAGNET: statusStr = "NO MAGNET";
+                break;
+            case FIELD_TOO_LOW: statusStr = "TOO LOW";
+                break;
+            case FIELD_TOO_HIGH: statusStr = "TOO HIGH";
+                break;
+            case OK: statusStr = "FINE";
+                break;
+            default: statusStr = "ERROR";
+        }
+        ESP_LOGI(TAG_ANGLE, "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; AVERAGE_ANGLE: %3d",
+                 statusStr,
+                 agc,
+                 angle_info.last_raw_angle,
+                 angle_info.last_angle,
+                 angle_info.angle);
+
+        vTaskDelayUntil(&time, configTICK_RATE_HZ)
     }
-    uint16_t angle =(buff[AS5600_REG_ANGLE_H] * 256 + buff[AS5600_REG_ANGLE_L]) * 360 /4096;
-    ESP_LOGI(TAG_ANGLE, "Status: %10s; AGC: x%02x; ANGLE: %3d", statusStr, buff[AS5600_REG_AGC], angle);
 }
