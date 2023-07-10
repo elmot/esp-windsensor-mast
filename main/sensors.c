@@ -112,7 +112,7 @@ static inline const char *sensor_status() {
 
 }
 
-_Noreturn void log_task(__unused void *args) {
+_Noreturn void dev_service_task(__unused void *args) {
     TickType_t time = xTaskGetTickCount();
     while (1) {
         const char *statusStr = sensor_status();

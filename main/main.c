@@ -89,7 +89,9 @@ static httpd_handle_t start_webserver(void)
     return server;
 }
 
+
 TaskHandle_t sensor_task_handle;
+TaskHandle_t dev_service_task_handle;
 void app_main(void)
 {
     /*
@@ -123,5 +125,5 @@ void app_main(void)
     start_dns_server();
 
     xTaskCreate(sensor_task,"Sensor Task",4096,NULL,10,&sensor_task_handle);
-    xTaskCreate(log_task,"Sensor Task",4096,NULL,10,&sensor_task_handle);
+    xTaskCreate(dev_service_task,"Development assistance Task",4096,NULL,10,&dev_service_task_handle);
 }

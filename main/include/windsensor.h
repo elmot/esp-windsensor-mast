@@ -4,7 +4,7 @@
 #include "esp_http_server.h"
 
 _Noreturn void sensor_task(void* args);
-_Noreturn void log_task(void* args);
+_Noreturn void dev_service_task(void* args);
 void registerHttpHandlers(httpd_handle_t server);
 
 typedef enum  {ERROR, NO_MAGNET, FIELD_TOO_LOW,FIELD_TOO_HIGH, OK} SENSOR_STATUS;
