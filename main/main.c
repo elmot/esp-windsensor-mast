@@ -25,35 +25,33 @@
 
 static const char *TAG = "windsensor";
 
-static void wifi_event_handler(__unused void *arg,__unused esp_event_base_t event_base,
-                               int32_t event_id, void *event_data)
-{
+static void wifi_event_handler(__unused void *arg, __unused esp_event_base_t event_base,
+                               int32_t event_id, void *event_data) {
     if (event_id == WIFI_EVENT_AP_STACONNECTED) {
-        wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *)event_data;
+        wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *) event_data;
         ESP_LOGI(TAG, "station " MACSTR " join, AID=%d",
                  MAC2STR(event->mac), event->aid);
     } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
-        wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *)event_data;
+        wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *) event_data;
         ESP_LOGI(TAG, "station " MACSTR " leave, AID=%d",
                  MAC2STR(event->mac), event->aid);
     }
 }
 
-static void wifi_init_softap(void)
-{
+static void wifi_init_softap(void) {
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &wifi_event_handler, NULL));
 
     wifi_config_t wifi_config = {
-        .ap = {
-            .ssid = CONFIG_ESP_WIFI_SSID,
-            .ssid_len = strlen(CONFIG_ESP_WIFI_SSID),
-            .password = CONFIG_ESP_WIFI_PASSWORD,
-            .max_connection = CONFIG_ESP_MAX_STA_CONN,
-            .authmode = WIFI_AUTH_WPA_WPA2_PSK
-        },
+            .ap = {
+                    .ssid = CONFIG_ESP_WIFI_SSID,
+                    .ssid_len = strlen(CONFIG_ESP_WIFI_SSID),
+                    .password = CONFIG_ESP_WIFI_PASSWORD,
+                    .max_connection = CONFIG_ESP_MAX_STA_CONN,
+                    .authmode = WIFI_AUTH_WPA_WPA2_PSK
+            },
     };
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
@@ -72,8 +70,7 @@ static void wifi_init_softap(void)
 }
 
 
-static httpd_handle_t start_webserver(void)
-{
+static httpd_handle_t start_webserver(void) {
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.max_open_sockets = 13;
@@ -92,8 +89,37 @@ static httpd_handle_t start_webserver(void)
 
 TaskHandle_t sensor_task_handle;
 TaskHandle_t dev_service_task_handle;
-void app_main(void)
-{
+
+#define NVS_NS "settings"
+#define NVS_KEY_ANGLE_CORRECTION "angle_corr"
+#define NVS_KEY_ANGLE_AVERAGE_MS "angle_average_ms"
+#define NVS_KEY_WIND_SPEED "wind_speed"
+#define NVS_KEY_WIND_SPEED_TICKS "wind_speed_ticks"
+
+void load_persistent_settings() {
+    nvs_handle_t nvs_handle;
+    esp_err_t status = nvs_open(NVS_NS, NVS_READONLY, &nvs_handle);
+    if (status == ESP_ERR_NVS_NOT_FOUND) return;
+    ESP_ERROR_CHECK_WITHOUT_ABORT(status);
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_i16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, &angle_info.angle_corr));
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_i16(nvs_handle, NVS_KEY_ANGLE_AVERAGE_MS, &angle_info.average_time_ms));
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_i16(nvs_handle, NVS_KEY_WIND_SPEED, &wind_speed_info.wind_speed_calib));
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_i16(nvs_handle,
+                                              NVS_KEY_WIND_SPEED_TICKS, &wind_speed_info.wind_speed_calib_ticks));
+    nvs_close(nvs_handle);
+}
+
+void save_persistent_settings() {
+    nvs_handle_t nvs_handle;
+    ESP_ERROR_CHECK(nvs_open(NVS_NS, NVS_READWRITE, &nvs_handle));
+    ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, angle_info.angle_corr));
+    ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_ANGLE_AVERAGE_MS, angle_info.average_time_ms));
+    ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_WIND_SPEED, wind_speed_info.wind_speed_calib));
+    ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_WIND_SPEED_TICKS, wind_speed_info.wind_speed_calib_ticks));
+    nvs_close(nvs_handle);
+}
+
+void app_main(void) {
     /*
         Turn of warnings from HTTP server as redirecting traffic will yield
         lots of invalid requests
@@ -102,6 +128,7 @@ void app_main(void)
     esp_log_level_set("httpd_txrx", ESP_LOG_ERROR);
     esp_log_level_set("httpd_parse", ESP_LOG_ERROR);
 
+    load_persistent_settings();
 
     // Initialize networking stack
     ESP_ERROR_CHECK(esp_netif_init());
@@ -124,6 +151,6 @@ void app_main(void)
     // Start the DNS server that will redirect all queries to the softAP IP
     start_dns_server();
 
-    xTaskCreate(sensor_task,"Sensor Task",4096,NULL,10,&sensor_task_handle);
-    xTaskCreate(dev_service_task,"Development assistance Task",4096,NULL,10,&dev_service_task_handle);
+    xTaskCreate(sensor_task, "Sensor Task", 4096, NULL, 10, &sensor_task_handle);
+    xTaskCreate(dev_service_task, "Development assistance Task", 4096, NULL, 10, &dev_service_task_handle);
 }

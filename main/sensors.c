@@ -32,7 +32,7 @@ static double averaging_buffer_sin[AVERAGING_BUFFER_SIZE];
 static double averaging_buffer_cos[AVERAGING_BUFFER_SIZE];
 static size_t averaging_idx = 0;
 
-volatile angle_info_t angle_info = {.average_time_seconds = 2, .angle_shift = 1};
+volatile angle_info_t angle_info = {.average_time_ms = 2, .angle_corr = 1};
 static volatile uint16_t agc;
 
 _Noreturn void sensor_task(__unused void *args) {
@@ -75,7 +75,7 @@ _Noreturn void sensor_task(__unused void *args) {
                 angle_info.status = NO_MAGNET;
             }
             angle_info.last_raw_angle = (buff[AS5600_REG_ANGLE_H] * 256 + buff[AS5600_REG_ANGLE_L]) * 360 / 4096;
-            int angle_sample = (angle_info.last_raw_angle + angle_info.angle_shift) % 360;
+            int angle_sample = (angle_info.last_raw_angle + angle_info.angle_corr) % 360;
             angle_info.last_angle = angle_sample;
             averaging_buffer_sin[averaging_idx] = sin(angle_sample * M_PI / 360);
             averaging_buffer_cos[averaging_idx] = cos(angle_sample * M_PI / 360);
@@ -88,7 +88,7 @@ _Noreturn void sensor_task(__unused void *args) {
             }
             angle_info.angle = (360 + (int) round(atan2(sum_sin, sum_cos) * 360 / M_PI)) % 360;
         }
-        vTaskDelayUntil(&time, configTICK_RATE_HZ * angle_info.average_time_seconds / AVERAGING_BUFFER_SIZE)
+        vTaskDelayUntil(&time, 1000 * configTICK_RATE_HZ * angle_info.average_time_ms / AVERAGING_BUFFER_SIZE)
     }
 }
 
