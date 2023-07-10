@@ -28,6 +28,7 @@ typedef struct {
     volatile uint16_t wind_speed_calib_ticks;
     float wind;
 } wind_speed_info_t;
+
 extern volatile wind_speed_info_t wind_speed_info;
 
 int sensor_response(char *buffer, ssize_t capacity);

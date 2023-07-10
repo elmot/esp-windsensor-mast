@@ -33,6 +33,8 @@ static double averaging_buffer_cos[AVERAGING_BUFFER_SIZE];
 static size_t averaging_idx = 0;
 
 volatile angle_info_t angle_info = {.average_time_ms = 2, .angle_corr = 1};
+volatile wind_speed_info_t wind_speed_info = {.wind=3};
+
 static volatile uint16_t agc;
 
 _Noreturn void sensor_task(__unused void *args) {
