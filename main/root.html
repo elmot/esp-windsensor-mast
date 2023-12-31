@@ -84,7 +84,7 @@
         Your browser doesn't support canvas
     </canvas>
     <canvas id="windArrow" width="100" height="500"></canvas>
-    <div id="awa">263</div>
+    <div id="awa">---</div>
 </div>
 </body>
 <script type="text/javascript">
@@ -125,7 +125,7 @@
 
     async function requestData() {
         const response = await fetch(
-            "http://yanus.wind/data?" + Math.random(),
+            "/data?" + Math.random(),
             init = {
                 method: "GET",
                 mode: "no-cors",

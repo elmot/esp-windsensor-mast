@@ -7,18 +7,29 @@ extern const char setup_start[] asm("_binary_setup_html_start");
 extern const char setup_end[] asm("_binary_setup_html_end");
 
 // HTTP GET Handlers
-static esp_err_t page_get_handler(httpd_req_t *req) {
-    const ssize_t root_len = root_end - root_start;
+static esp_err_t page_get_handler(httpd_req_t *req, const char * const start, const char * const end) {
+    const ssize_t root_len = end - start;
     ESP_LOGI(TAG, "Serve url: %s", req->uri);
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_send(req, root_start, root_len);
-
+    httpd_resp_send(req, start, root_len);
     return ESP_OK;
+}
+
+static esp_err_t wind_get_handler(httpd_req_t *req) {
+    return page_get_handler(req, root_start, root_end);
+}
+
+static esp_err_t setup_get_handler(httpd_req_t *req) {
+    return page_get_handler(req, setup_start, setup_end);
+}
+
+static esp_err_t upgrade_handler(httpd_req_t *req) {
+    return page_get_handler(req, setup_start, setup_end);
 }
 
 static esp_err_t root_get_handler(httpd_req_t *req) {
     httpd_resp_set_status(req, "302 Temporary Redirect");
-    httpd_resp_set_hdr(req, "Location", "http://yanus.wind/wind");
+    httpd_resp_set_hdr(req, "Location", "http://yanus.local/wind");
     // iOS requires content in the response to detect a captive portal, simply redirecting is not sufficient.
     httpd_resp_send(req, "Redirect to the captive portal", HTTPD_RESP_USE_STRLEN);
 
@@ -30,23 +41,19 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
 static const httpd_uri_t root = {
         .uri = "/",
         .method = HTTP_GET,
-        .user_ctx= (char *[2]) {root_start, root_end},
-        .handler = page_get_handler
+        .handler = root_get_handler
 };
 
-/*
 static const httpd_uri_t setup = {
         .uri = "/setup",
         .method = HTTP_GET,
-        .user_ctx= {ser, root_end},
-        .handler = page_handler
+        .handler = setup_get_handler
 };
-*/
 
 static const httpd_uri_t wind = {
         .uri = "/wind",
         .method = HTTP_GET,
-        .handler = page_get_handler
+        .handler = wind_get_handler
 };
 
 static esp_err_t data_handler(httpd_req_t *req) {
@@ -72,5 +79,6 @@ void registerHttpHandlers(httpd_handle_t server) {
     httpd_register_uri_handler(server, &root);
     httpd_register_uri_handler(server, &wind);
     httpd_register_uri_handler(server, &data);
+    httpd_register_uri_handler(server, &setup);
     httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, http_404_error_handler);
 }

@@ -4,40 +4,155 @@
     <meta charset="UTF-8">
     <title>Yanus Wind System - Setup</title>
     <style>
-        html, body {
-            margin: 0;
-            width: 100%;
+        html{
+            margin:0;
         }
-
-        div.screen {
+        body {
+            margin: auto;
             height: 100vh;
             width: 100%;
-            border-top: darkgray double 3px;
+            background-color: #AAFFAA; /*todo remove*/
+            font-size: 5vh;
+            max-font-size: 4vw;
+
+            > div {
+                display: none;
+                background-color: pink; /*todo remove*/
+            }
+
+            > #nav {
+                width: 100%;
+                background-color: #AAAAFF;
+                display: block;
+            }
+
+            > #kbd {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: space-evenly;
+                row-gap: 0.2em;
+                padding: 3%;
+
+                > div {
+                    background-color: #AAAAFF;
+                    text-anchor: middle;
+                    text-align: center;
+                    width: 24%;
+                    cursor: pointer;
+                    border: 1vw outset gray;
+                }
+
+                > div#ok {
+                    background-color: #AAFFAA;
+                }
+            }
         }
+        .inputbox {
+            padding: 3%;
+            > input {
+                width: 60vw;
+                height: 15vh;
+                font-size: 10vh;
+            }
+        }
+        body.angle {
+            > #b_angle {
+                display: block;
+            }
+
+            > #nav #angle {
+                font-weight: bold;
+                font-size: larger;
+            }
+        }
+
+        body.speed {
+            > div#b_speed {
+                display: block;
+            }
+
+            > #nav #speed {
+                font-weight: bold;
+                font-size: larger;
+            }
+        }
+
+        body.aver {
+            > div#b_aver {
+                display: block;
+            }
+
+            > #nav #aver {
+                font-weight: bold;
+                font-size: larger;
+            }
+        }
+
+        body.warn {
+            > div#b_warn {
+                display: block;
+            }
+
+            > #nav #warn {
+                font-size: larger;
+                font-weight: bold;
+            }
+        }
+
     </style>
 </head>
 
-<body>
-<a id="angle">
-    <div class="screen">
-        <a href="#speed">Speed setup</a>
-        <a href="#aver">Angle averaging</a>
-    </div>
-</a>
-
-<div class="screen">
-    <a id="speed">
-        <a href="#angle">Angle correction</a>
-        <a href="#aver">Angle averaging</a>
-    </a>
+<body class="speed">
+<div id="nav">
+    <a href="#" id="angle">Angle&nbsp;correction</a> |
+    <a href="#" id="speed">Speed&nbsp;setup</a> |
+    <a href="#" id="aver">Angle&nbsp;averaging</a> |
+    <a href="#" id="warn">Warnings</a>
 </div>
-
-<div class="screen">
-    <a id="aver">
-        <a href="#angle">Angle correction</a>
-        <a href="#speed">Speed setup</a>
-    </a>
+<div class="inputbox" id="b_angle"></div>
+<div class="inputbox" id="b_speed">
+    <label for="i_angle">Wind now:</label><br>
+    <input type="text" autocomplete="off" id="i_angle">
+    <sup>m</sup>/<sib>s</sib></div>
+<div class="inputbox" id="b_aver">Angle&nbsp;averaging</div>
+<div class="inputbox" id="b_warn">Warnings</div>
+<div class="inputbox" id="kbd">
+    <div id="1">1</div>
+    <div id="2">2</div>
+    <div id="3">3</div>
+    <div id="4">4</div>
+    <div id="5">5</div>
+    <div id="6">6</div>
+    <div id="7">7</div>
+    <div id="8">8</div>
+    <div id="9">9</div>
+    <div id="bk"><=</div>
+    <div id="0">0</div>
+    <div id="ok">&#x23ce;</div>
 </div>
+<script>
 
+    document.getElementById("nav").addEventListener("click", event => {
+        if (event.target !== event.currentTarget) {
+            document.body.className = event.target.id
+        }
+    })
+    document.getElementById("kbd").addEventListener("click", event => {
+        if (event.target !== event.currentTarget) {
+            let element = document.getElementById("i_angle")
+            element.focus()
+            switch (event.target.id) {
+                case "bk":
+                    element.value = element.value.substring(0, Math.max(0, element.value.length - 1))
+                    break
+                case "ok":
+                    alert(element.value)
+                    break
+                default:
+                    element.value += event.target.id
+            }
+        }
+    })
+</script>
 </body>
 </html>
