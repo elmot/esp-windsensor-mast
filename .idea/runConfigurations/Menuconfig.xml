@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Menuconfig" type="ShConfigurationType" activateToolWindowBeforeRun="false">
-    <option name="SCRIPT_TEXT" value="@call C:\Espressif\frameworks\esp-idf-v5.0.2\export.bat &amp;&amp; start &quot;Menuconfig&quot; cmake --build build --target menuconfig" />
+    <option name="SCRIPT_TEXT" value="@call C:\Espressif\frameworks\esp-idf-master\export.bat &amp;&amp; start &quot;Menuconfig&quot; cmake --build build --target menuconfig" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" />
     <option name="SCRIPT_OPTIONS" value="" />
