@@ -2,6 +2,7 @@
 
 #include "esp_log.h"
 #include "esp_http_server.h"
+#include "ota.h"
 
 _Noreturn void sensor_task(void *args);
 
