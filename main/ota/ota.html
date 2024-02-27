@@ -1,8 +1,81 @@
 <html lang="en">
+<head>
+    <title>Yanus Wind System Firmware Update</title>
+    <style>
+        .output {
+            width: 80%;
+            height: 20em;
+            border: solid 2px #808080;
+            overflow: scroll;
+            background-color:#ffffff ;
+        }
+        body{
+            background-color:#d6d6d6 ;
+
+        }
+    </style>
+</head>
 <body>
-  <form method="post" enctype="multipart/form-data" action="/setup/ota-upload">
-      <input type="file" name="ota_data">
-      <input type="submit">
-  </form>
+<input type="file" name="ota_data">
+<br>
+<button id="upload">Upload Firmware</button>
+<div class="output"></div>
 </body>
+<script>
+    const fileInput = document.querySelector("input[type=file]");
+    const output = document.querySelector(".output");
+
+    async function verifyFile() {
+        const [file] = fileInput.files;
+
+        if (file) {
+            const byteArray = new Uint8Array(await file.arrayBuffer());
+            output.innerText = "File size: " + byteArray.length + "\r"
+            if (byteArray[0] === 0xE9) {
+                output.innerText += "Header signature OK\r";
+            } else {
+                output.innerText += "Header signature FAIL\r";
+                return {correct: false}
+            }
+            const flashSizeNum = byteArray[3] >> 4
+            const flashSize = ["1MB", "2MB", "4MB", "8MB", "16MB", "32MB", "64MB", "128MB", "MAX"][flashSizeNum]
+            if (flashSize == null) {
+                output.innerText += "Flash size: INCORRECT(" + flashSizeNum + ")\n"
+                return {correct: false}
+            }
+            output.innerText += "Flash size: " + flashSize + "\n"
+            const chipId = byteArray[12] + (byteArray[13] << 8)
+            const chipName = {
+                0x0000: "ESP32", 0x0002: "ESP32-S2", 0x0005: "ESP32-C3", 0x0009: "ESP32-S3",
+                0x000C: "ESP32-C2", 0x000D: "ESP32-C6", 0x0010: "ESP32-H2", 0x0012: "ESP32-P4"
+            }[chipId]
+            if (chipName == null) {
+                output.innerText += "Chip: INVALID(" + chipId.toString(16) + ")\n";
+                return {correct: false}
+            }
+            output.innerText += "Chip: " + chipName + "\nThe file seems to be correct\n"
+            //todo app name
+            //todo version
+            return {correct: true, content: byteArray}
+        }
+        return {correct: false}
+    }
+
+    fileInput.addEventListener("change", async () => {
+        await verifyFile()
+    });
+    document.querySelector("button#upload").addEventListener("click", async () => {
+        const {correct, content} = await verifyFile()
+        if (correct) {
+            output.innerText += "Upload is starting...\n"
+            const req = new XMLHttpRequest()
+            const outputHtml = output.innerHTML
+            req.addEventListener("progress", () => {
+                output.innerHTML = outputHtml + req.responseText
+            })
+            req.open("PUT", "/setup/ota-put")
+            req.send(content)
+        }
+    })
+</script>
 </html>
