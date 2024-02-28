@@ -23,7 +23,7 @@ const httpd_uri_t ota_about_get = {
     .handler = ota_about_get_handler
 };
 
-const httpd_uri_t ota_post = {
+const httpd_uri_t ota_put = {
     .uri = "/setup/ota-put",
     .method = HTTP_PUT,
     .handler = ota_put_handler

@@ -78,6 +78,7 @@ void registerHttpHandlers(httpd_handle_t server) {
     httpd_register_uri_handler(server, &data);
     httpd_register_uri_handler(server, &setup);
     httpd_register_uri_handler(server, &ota_get);
-    httpd_register_uri_handler(server, &ota_post);
+    httpd_register_uri_handler(server, &ota_about_get);
+    httpd_register_uri_handler(server, &ota_put);
     httpd_register_err_handler(server, HTTPD_404_NOT_FOUND, http_404_error_handler);
 }
