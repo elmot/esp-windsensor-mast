@@ -27,40 +27,66 @@
     const fileInput = document.querySelector("input[type=file]");
     const output = document.querySelector(".output");
 
+    function readUint16(byteArray, offset) {
+        return byteArray[offset] + (byteArray[offset + 1] << 8)
+    }
+
+    function readInt32(byteArray, offset) {
+        return byteArray[offset] + (byteArray[offset + 1] << 8) + (byteArray[offset + 2] << 16) + (byteArray[offset + 3] << 24)
+    }
+
+    function extractCString(byteArray, start, length) {
+        let i = 0
+        while (i <= length && byteArray[start + i] !== 0) {
+            i++
+        }
+        return i === 0 ? "" : new TextDecoder().decode(byteArray.subarray(start, start + i))
+    }
+
     async function verifyFile() {
         const [file] = fileInput.files;
 
         if (file) {
             const byteArray = new Uint8Array(await file.arrayBuffer());
-            output.innerText = "File size: " + byteArray.length + "\r"
+            output.innerHTML = "File size: " + byteArray.length + "<br>"
             if (byteArray[0] === 0xE9) {
-                output.innerText += "Header signature OK\r";
+                output.innerHTML += "Header signature OK<br>";
             } else {
-                output.innerText += "Header signature FAIL\r";
+                output.innerHTML += "Header signature FAIL<br>";
                 return {correct: false}
             }
             const flashSizeNum = byteArray[3] >> 4
             const flashSize = ["1MB", "2MB", "4MB", "8MB", "16MB", "32MB", "64MB", "128MB", "MAX"][flashSizeNum]
             if (flashSize == null) {
-                output.innerText += "Flash size: INCORRECT(" + flashSizeNum + ")\n"
+                output.innerHTML += "Flash size: INCORRECT(" + flashSizeNum + ")<br>"
                 return {correct: false}
             }
-            output.innerText += "Flash size: " + flashSize + "\n"
-            const readUint16 = function(offset) {
-                return  byteArray[offset] + (byteArray[offset + 1] << 8)
-            }
-            const chipId = readUint16(12)
+            output.innerHTML += "Flash size: " + flashSize + "<br>"
+            const chipId = readUint16(byteArray, 12)
             const chipName = {
                 0x0000: "ESP32", 0x0002: "ESP32-S2", 0x0005: "ESP32-C3", 0x0009: "ESP32-S3",
                 0x000C: "ESP32-C2", 0x000D: "ESP32-C6", 0x0010: "ESP32-H2", 0x0012: "ESP32-P4"
             }[chipId]
             if (chipName == null) {
-                output.innerText += "Chip: INVALID(" + chipId.toString(16) + ")\n";
+                output.innerHTML += "Chip: INVALID(" + chipId.toString(16) + ")<br>";
                 return {correct: false}
             }
-            //todo app name
-            //todo version
-            output.innerText += "Chip: " + chipName + "\nThe file seems to be correct\n"
+            output.innerHTML += "Chip: " + chipName + "<br>"
+            const segmentCount = byteArray[1]
+            for (let i = 0, offset = 24/* sizeof esp_image_header_t*/; i < segmentCount; i++) {
+                const segmentDataLen = readInt32(byteArray, offset + 4)
+                const segment = byteArray.subarray(offset + 8, segmentDataLen)
+                if (readInt32(segment, 0) ^ 0xABCD5432 === 0) {
+                    const decoder = new TextDecoder()
+                    output.innerHTML += "<hr>AppName: " + extractCString(segment, 48, 32) + "<br>"
+                        + "Version: " + extractCString(segment, 16, 32) + "<br>"
+                        + "Build timestamp: " + extractCString(segment, 96, 112) + " "
+                        + extractCString(segment, 80, 16) + "<br>"
+                    break;
+                }
+                offset += segmentDataLen + 8
+            }
+            output.innerHTML += "<hr>The file seems to be correct<br>"
             return {correct: true, content: byteArray}
         }
         return {correct: false}
@@ -75,9 +101,9 @@
             window.alert("No password!")
             return
         }
-            const {correct, content} = await verifyFile()
+        const {correct, content} = await verifyFile()
         if (correct) {
-            output.innerText += "Upload is starting...\n"
+            output.innerHTML += "Upload is starting...<br>"
             const req = new XMLHttpRequest()
             const outputHtml = output.innerHTML
             req.addEventListener("progress", () => {
