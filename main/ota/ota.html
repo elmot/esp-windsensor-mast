@@ -4,19 +4,21 @@
     <style>
         .output {
             width: 80%;
-            height: 20em;
+            height: 30em;
             border: solid 2px #808080;
             overflow: scroll;
-            background-color:#ffffff ;
+            background-color: #ffffff;
         }
-        body{
-            background-color:#d6d6d6 ;
 
+        body {
+            background-color: #d6d6d6;
         }
     </style>
 </head>
 <body>
 <input type="file" name="ota_data">
+<br>
+<label for="passwd">Password:</label> <input id="passwd" type="password" name="ota_password">
 <br>
 <button id="upload">Upload Firmware</button>
 <div class="output"></div>
@@ -44,7 +46,10 @@
                 return {correct: false}
             }
             output.innerText += "Flash size: " + flashSize + "\n"
-            const chipId = byteArray[12] + (byteArray[13] << 8)
+            const readUint16 = function(offset) {
+                return  byteArray[offset] + (byteArray[offset + 1] << 8)
+            }
+            const chipId = readUint16(12)
             const chipName = {
                 0x0000: "ESP32", 0x0002: "ESP32-S2", 0x0005: "ESP32-C3", 0x0009: "ESP32-S3",
                 0x000C: "ESP32-C2", 0x000D: "ESP32-C6", 0x0010: "ESP32-H2", 0x0012: "ESP32-P4"
@@ -53,9 +58,9 @@
                 output.innerText += "Chip: INVALID(" + chipId.toString(16) + ")\n";
                 return {correct: false}
             }
-            output.innerText += "Chip: " + chipName + "\nThe file seems to be correct\n"
             //todo app name
             //todo version
+            output.innerText += "Chip: " + chipName + "\nThe file seems to be correct\n"
             return {correct: true, content: byteArray}
         }
         return {correct: false}
@@ -65,7 +70,12 @@
         await verifyFile()
     });
     document.querySelector("button#upload").addEventListener("click", async () => {
-        const {correct, content} = await verifyFile()
+        const password = document.querySelector("input[type=password]").value
+        if (password.trim() === "") {
+            window.alert("No password!")
+            return
+        }
+            const {correct, content} = await verifyFile()
         if (correct) {
             output.innerText += "Upload is starting...\n"
             const req = new XMLHttpRequest()
@@ -73,7 +83,7 @@
             req.addEventListener("progress", () => {
                 output.innerHTML = outputHtml + req.responseText
             })
-            req.open("PUT", "/setup/ota-put")
+            req.open("PUT", "/setup/ota-put", true, null, password)
             req.send(content)
         }
     })

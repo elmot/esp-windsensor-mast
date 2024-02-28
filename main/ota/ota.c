@@ -1,7 +1,6 @@
 #include "ota.h"
 #include "esp_ota_ops.h"
-//todo authentification
-//todo display version
+#include "mbedtls/base64.h"
 static esp_err_t ota_get_handler(httpd_req_t* req);
 
 static esp_err_t ota_about_get_handler(httpd_req_t* req);
@@ -37,8 +36,9 @@ const httpd_uri_t ota_post = {
 extern const char ota_start[] asm("_binary_ota_html_start");
 extern const char ota_end[] asm("_binary_ota_html_end");
 const char* OTA_TAG = "web-ota";
+#define OTA_PASSWORD "AlexShilov"
 
-bool ota_busy = false;
+volatile bool ota_busy = false;
 
 bool report_error(httpd_req_t* req, esp_err_t errorCode, const char* fileName, int line)
 {
@@ -61,7 +61,7 @@ void httpd_printf(httpd_req_t* req, const char* format, ...)
     vsnprintf(buffer, 199, format, argptr);
     va_end(argptr);
     httpd_resp_sendstr_chunk(req, buffer);
-    ESP_LOGI(WEB_TAG, "HTTP: %s", buffer);
+    ESP_LOGI(OTA_TAG, "HTTP: %s", buffer);
 }
 
 static esp_err_t ota_about_get_handler(httpd_req_t* req)
@@ -90,25 +90,50 @@ static esp_err_t ota_get_handler(httpd_req_t* req)
 }
 
 #define BUF_SIZE (16384)
+#define BASIC_AUTH_PREFIX "Basic "
 
 static esp_err_t ota_put_handler(httpd_req_t* req)
 {
     ESP_LOGI(OTA_TAG, "Upload url: %s", req->uri);
     if (ota_busy)
     {
-        httpd_resp_send_err(req, 500, "Upload process is already underway");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Upload process is already underway");
         ESP_LOGE(OTA_TAG, "Upload process is already underway (%d)", 0);
         return ESP_OK;
     }
     ota_busy = true;
+
+    static char buffer[BUF_SIZE + 1];
+    buffer[BUF_SIZE] = 0;
+    if (httpd_req_get_hdr_value_str(req, "Authorization", buffer,BUF_SIZE) != ESP_OK)
+    {
+        httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"Yanus Wind System Firmware Update\"");
+        httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, NULL);
+        ota_busy = false;
+        return ESP_OK;
+    }
+    bool authOk = strncmp(buffer,BASIC_AUTH_PREFIX, sizeof BASIC_AUTH_PREFIX - 1) == 0;
+    if (authOk)
+    {
+        static unsigned char auth[200];
+        size_t auth_len;
+        unsigned char* base64Buffer = (unsigned char*)buffer + sizeof BASIC_AUTH_PREFIX - 1;
+        authOk = mbedtls_base64_decode(auth, 199, &auth_len,
+                                       base64Buffer, strlen((char*)base64Buffer)) == 0;
+        authOk &= strcmp((char*)auth, ":" OTA_PASSWORD) == 0;
+    }
+    if (!authOk)
+    {
+        httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, NULL);
+        ota_busy = false;
+        return ESP_OK;
+    }
     uint uploaded_size = 0;
     uint reported_size = 0;
     bool reboot = false;
     const esp_partition_t* updatingPartition = NULL;
     esp_ota_handle_t ota_handle;
 
-    static char buffer[BUF_SIZE + 1];
-    buffer[BUF_SIZE] = 0;
 
     httpd_resp_set_type(req, "text/html");
     for (int leftBytes = req->content_len; leftBytes > 0;)
@@ -165,19 +190,20 @@ static esp_err_t ota_put_handler(httpd_req_t* req)
         httpd_printf(req, "Switching partitions...<br>", newDescription.idf_ver);
         if (report_error(req, esp_ota_set_boot_partition(updatingPartition),__FILE__,__LINE__))
         {
-            httpd_printf(req, "Upgrade failed");
+            httpd_printf(req, "Upgrade failed<br>");
         }
         else
         {
-            httpd_printf(req, "Upgrade successfull");
+            httpd_printf(req, "Upgrade successfull<br>");
         }
         reboot = true;
-        httpd_printf(req, "Rebooting...");
+        httpd_printf(req, "Rebooting...<br>");
     }
     ota_busy = false;
     httpd_resp_send_chunk(req, NULL, 0);
-    if(reboot)
+    if (reboot)
     {
+        vTaskDelay(500);
         esp_restart();
     }
     return ESP_OK;
