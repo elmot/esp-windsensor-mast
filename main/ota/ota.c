@@ -1,6 +1,8 @@
 #include "ota.h"
 #include "esp_ota_ops.h"
 #include "mbedtls/base64.h"
+#include "windsensor.h"
+
 static esp_err_t ota_get_handler(httpd_req_t* req);
 
 static esp_err_t ota_about_get_handler(httpd_req_t* req);
@@ -69,6 +71,7 @@ static esp_err_t ota_about_get_handler(httpd_req_t* req)
     const esp_app_desc_t* desc = esp_app_get_description();
     const esp_partition_t* currentPartition = esp_ota_get_running_partition();
     httpd_resp_set_type(req, "text/html");
+    httpd_resp_set_hdr(req, "Refresh","3");
     httpd_printf(req, "<html><head><title>About</title></head>"
                  "<body><h1>Yanus wind system</h1>");
     httpd_printf(req, "Name: %s<br>", desc->project_name);
@@ -76,8 +79,8 @@ static esp_err_t ota_about_get_handler(httpd_req_t* req)
     httpd_printf(req, "Build timestamp: %s %s<br>", desc->date, desc->time);
     httpd_printf(req, "IDF version: %s", desc->idf_ver);
     httpd_printf(req, "<hr>");
-    httpd_printf(req, "Current Partition: %s (0x%08x)", currentPartition->label, currentPartition->address);
-    ESP_LOGI(OTA_TAG, "Current partition: %s", currentPartition->label);
+    httpd_printf(req, "Current Partition: %s (0x%08x)<br>", currentPartition->label, currentPartition->address);
+    httpd_printf(req, "Angle sensor status: %s; measured angle: %u<br>", sensor_status(), angle_info.last_angle);
 
     httpd_printf(req, "</body></html>");
     httpd_resp_send_chunk(req, NULL, 0);

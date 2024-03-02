@@ -2,6 +2,7 @@
 #include "driver/i2c.h"
 #include "esp_log.h"
 #include "math.h"
+#include "driver/timer.h"
 
 #define I2C_MASTER_RX_BUF_DISABLE 0
 #define I2C_MASTER_TX_BUF_DISABLE 0
@@ -32,7 +33,7 @@ static double averaging_buffer_sin[AVERAGING_BUFFER_SIZE];
 static double averaging_buffer_cos[AVERAGING_BUFFER_SIZE];
 static size_t averaging_idx = 0;
 
-volatile angle_info_t angle_info = {.average_time_ms = 2, .angle_corr = 1};
+volatile angle_info_t angle_info = {.average_time_ms = 2000, .angle_corr = 1};
 volatile wind_speed_info_t wind_speed_info = {.wind=3};
 
 static volatile uint16_t agc;
@@ -90,11 +91,11 @@ _Noreturn void sensor_task(__unused void *args) {
             }
             angle_info.angle = (360 + (int) round(atan2(sum_sin, sum_cos) * 360 / M_PI)) % 360;
         }
-        vTaskDelayUntil(&time, 1000 * configTICK_RATE_HZ * angle_info.average_time_ms / AVERAGING_BUFFER_SIZE)
+        xTaskDelayUntil(&time,  configTICK_RATE_HZ * angle_info.average_time_ms / 1000 / AVERAGING_BUFFER_SIZE);
     }
 }
 
-static inline const char *sensor_status() {
+const char *sensor_status() {
     switch (angle_info.status) {
         case NO_MAGNET:
             return "NO_MAGNET";

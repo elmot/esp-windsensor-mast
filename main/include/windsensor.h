@@ -8,6 +8,8 @@ _Noreturn void sensor_task(void *args);
 
 _Noreturn void dev_service_task(void *args);
 
+_Noreturn void wind_freq_generator(void *args);
+
 void registerHttpHandlers(httpd_handle_t server);
 
 typedef enum {
@@ -37,4 +39,6 @@ int sensor_response(char *buffer, ssize_t capacity);
 void load_persistent_settings();
 
 void save_persistent_settings();
+
+const char *sensor_status();
 
