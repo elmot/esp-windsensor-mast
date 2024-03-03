@@ -1,5 +1,5 @@
 #include "windsensor.h"
-#include "driver/i2c.h"
+#include "driver/gpio.h"
 #include "driver/gptimer.h"
 #include "esp_log.h"
 #include "math.h"
@@ -9,28 +9,8 @@
 #define TIMER_RESOLUTION_HZ (1000000)
 #define WIND_STALL_MS (2000)
 
-#define I2C_MASTER_RX_BUF_DISABLE 0
-#define I2C_MASTER_TX_BUF_DISABLE 0
-
-#define I2C_MASTER_PORT 0
-#define  AS560x_ADDR 0x36
-
-#define AS5600_OUT_REG (0x0B)
-#define AS5600_OUT_REG_SIZE (0x1C - 0x0B + 1)
-#define AS5600_REG_STATUS (0x00)
-#define AS5600_REG_RAW_ANGLE_H (0x0C - AS5600_OUT_REG)
-#define AS5600_REG_RAW_ANGLE_L (0x0D - AS5600_OUT_REG)
-#define AS5600_REG_ANGLE_H (0x0E - AS5600_OUT_REG)
-#define AS5600_REG_ANGLE_L (0x0F - AS5600_OUT_REG)
-#define AS5600_REG_AGC (0x1A - AS5600_OUT_REG)
-#define AS5600_REG_RAW_MAGNITUDE_H (0x1B - AS5600_OUT_REG)
-#define AS5600_REG_RAW_MAGNITUDE_L (0x1C - AS5600_OUT_REG)
-#define AS5600_STATUS_MH (0x08)
-#define AS5600_STATUS_ML (0x10)
-#define AS5600_STATUS_MD (0x20)
-
 #define AVERAGING_BUFFER_SIZE  (20)
-static const char* TAG_ANGLE = "mech-wind";
+const char* TAG_WIND = "mech-wind";
 
 static double averaging_buffer_sin[AVERAGING_BUFFER_SIZE];
 static double averaging_buffer_cos[AVERAGING_BUFFER_SIZE];
@@ -41,8 +21,6 @@ volatile wind_speed_info_t wind_speed_info = {
     .wind = 3, .wind_ticks = -1, .wind_speed_calib = 5, .wind_speed_calib_ticks = 700
 };
 
-
-static volatile uint16_t agc;
 
 static volatile bool speed_phase = 0;
 static volatile uint32_t speed_tick_counter = 0;
@@ -126,58 +104,14 @@ void initSpeedGpioAndTimers()
 
 _Noreturn void sensor_task(__unused void* args)
 {
-    ESP_LOGI(TAG_ANGLE, "Initialize i2c");
-    i2c_config_t conf = {
-        .mode = I2C_MODE_MASTER,
-        .sda_io_num = CONFIG_I2C_MASTER_SDA, // select SDA GPIO specific to your project
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = CONFIG_I2C_MASTER_SCL, // select SCL GPIO specific to your project
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = CONFIG_I2C_MASTER_FREQ_HZ, // select frequency specific to your project
-        .clk_flags = 0, // optional; you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here
-    };
+    initAngleSensor();
 
-
-    ESP_ERROR_CHECK(i2c_param_config(I2C_MASTER_PORT, &conf));
-
-    ESP_ERROR_CHECK(
-        i2c_driver_install(I2C_MASTER_PORT, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0));
-    ESP_LOGI(TAG_ANGLE, "i2c initialization done");
     TickType_t time = xTaskGetTickCount();
     initSpeedGpioAndTimers();
     while (1)
     {
-        uint8_t buff[AS5600_OUT_REG_SIZE] = {AS5600_OUT_REG}; //Start reading from status, 18 bytes
-        esp_err_t sensor_status = i2c_master_write_read_device(I2C_MASTER_PORT, AS560x_ADDR, buff, 1, buff,
-                                                               sizeof(buff), 100);
-        if (sensor_status != ESP_OK)
+        if (readAngle(&angle_info))
         {
-            angle_info.status = ERROR;
-        }
-        else
-        {
-            agc = buff[AS5600_REG_AGC];
-            uint8_t status = buff[AS5600_REG_STATUS];
-            if (status & AS5600_STATUS_MD)
-            {
-                if (status & AS5600_STATUS_ML)
-                {
-                    angle_info.status = FIELD_TOO_LOW;
-                }
-                else if (status & AS5600_STATUS_MH)
-                {
-                    angle_info.status = FIELD_TOO_HIGH;
-                }
-                else
-                {
-                    angle_info.status = OK;
-                }
-            }
-            else
-            {
-                angle_info.status = NO_MAGNET;
-            }
-            angle_info.last_raw_angle = (buff[AS5600_REG_ANGLE_H] * 256 + buff[AS5600_REG_ANGLE_L]) * 360 / 4096;
             int angle_sample = (angle_info.last_raw_angle + angle_info.angle_corr) % 360;
             angle_info.last_angle = angle_sample;
             averaging_buffer_sin[averaging_idx] = sin(angle_sample * M_PI / 360);
@@ -219,10 +153,10 @@ _Noreturn void dev_service_task(__unused void* args)
     while (1)
     {
         const char* statusStr = sensor_status();
-        ESP_LOGI(TAG_ANGLE,
+        ESP_LOGI(TAG_WIND,
                  "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; AVERAGE_ANGLE: %3d; SPEED_TICKS: %d; SPEED: %f",
                  statusStr,
-                 agc,
+                 angle_info.agc,
                  angle_info.last_raw_angle,
                  angle_info.last_angle,
                  angle_info.angle,
@@ -237,6 +171,6 @@ int sensor_response(char* buffer, ssize_t capacity)
 {
     const char* statusStr = sensor_status();
     return snprintf(buffer, capacity, "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,\"speed\": %3.1f}", statusStr,
-                     agc,
-                     angle_info.angle, wind_speed_info.wind);
+                    angle_info.agc,
+                    angle_info.angle, wind_speed_info.wind);
 }

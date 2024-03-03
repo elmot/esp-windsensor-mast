@@ -4,29 +4,35 @@
 #include "esp_http_server.h"
 #include "ota.h"
 
-_Noreturn void sensor_task(void *args);
+extern const char* TAG_WIND;
+_Noreturn void sensor_task(void* args);
 
-_Noreturn void dev_service_task(void *args);
+_Noreturn void dev_service_task(void* args);
 
-_Noreturn void wind_freq_generator(void *args);
+_Noreturn void wind_freq_generator(void* args);
 
 void registerHttpHandlers(httpd_handle_t server);
 
-typedef enum {
+typedef enum
+{
     ERROR, NO_MAGNET, FIELD_TOO_LOW, FIELD_TOO_HIGH, OK
 } SENSOR_STATUS;
-typedef struct {
+
+typedef struct
+{
     volatile uint16_t average_time_ms;
     volatile uint16_t angle_corr;
     volatile uint16_t last_raw_angle;
     volatile uint16_t last_angle;
     volatile uint16_t angle;
     volatile SENSOR_STATUS status;
+    volatile uint16_t agc;
 } angle_info_t;
 
 extern volatile angle_info_t angle_info;
 
-typedef struct {
+typedef struct
+{
     volatile uint16_t wind_speed_calib;
     volatile uint16_t wind_speed_calib_ticks;
     volatile int16_t wind_ticks;
@@ -35,11 +41,15 @@ typedef struct {
 
 extern volatile wind_speed_info_t wind_speed_info;
 
-int sensor_response(char *buffer, ssize_t capacity);
+int sensor_response(char* buffer, ssize_t capacity);
 
 void load_persistent_settings();
 
 void save_persistent_settings();
 
-const char *sensor_status();
+const char* sensor_status();
+
+void initAngleSensor();
+
+bool readAngle(volatile angle_info_t* angle_info);
 
