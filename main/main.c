@@ -153,7 +153,7 @@ void app_main(void) {
     start_dns_server();
 
     xTaskCreate(sensor_task, "Sensor Task", 4096, NULL, 10, &sensor_task_handle);
-    xTaskCreate(dev_service_task, "Development assistance Task", 4096, NULL, 10, &dev_service_task_handle);
+    xTaskCreate(data_broadcast_task, "Data broadcast", 4096, NULL, 10, &dev_service_task_handle);
 
     xTaskCreate(wind_freq_generator, "Simulate wind", 4096, NULL, 10, &wind_freq_generator_task_handle);
 }

@@ -4,6 +4,8 @@
 #include "esp_log.h"
 #include "math.h"
 
+#define PORT 3333
+
 #define SPEED_SENSOR_GPIO GPIO_NUM_9
 #define SPEED_SENSOR_DEBOUNCE_MS (30)
 #define TIMER_RESOLUTION_HZ (1000000)
@@ -147,12 +149,49 @@ const char* sensor_status()
     }
 }
 
-_Noreturn void dev_service_task(__unused void* args)
+void appendCheckSum(char* nmea_text, size_t len)
 {
+    uint8_t checksum = 0;
+    int i = 1;
+    for (; (i < len) && nmea_text[i] != 0; i++)
+    {
+        checksum = checksum ^ nmea_text[i];
+    }
+    snprintf(nmea_text + i, len - i, "*%02X", checksum);
+}
+
+_Noreturn void data_broadcast_task(__unused void* args)
+{
+    static char nmea_text[200];
     TickType_t time = xTaskGetTickCount();
+    nmea_bcast_init();
     while (1)
     {
         const char* statusStr = sensor_status();
+        if ((angle_info.status == FIELD_TOO_LOW) ||
+            (angle_info.status == FIELD_TOO_HIGH) ||
+            (angle_info.status == OK))
+        {
+            snprintf(nmea_text, sizeof nmea_text - 5, "$WIMWV,%d.0,R,%.1f,M,A", angle_info.angle, wind_speed_info.wind);
+        }
+        else
+        {
+            /*
+            MWV Wind Speed and Angle
+             1 2 3 4 5
+             | | | | |
+            $--MWV,x.x,a,x.x,a*hh
+            1) Wind Angle, 0 to 360 degrees
+            2) Reference, R = Relative, T = True
+            3) Wind Speed
+            4) Wind Speed Units, K/M/N
+            5) Status, A = Data Valid
+            6) Checksum
+             */
+            snprintf(nmea_text, sizeof nmea_text - 5, "$WIMWV,,R,%.1f,M,V", wind_speed_info.wind);
+        }
+        appendCheckSum(nmea_text, sizeof nmea_text);
+
         ESP_LOGI(TAG_WIND,
                  "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; AVERAGE_ANGLE: %3d; SPEED_TICKS: %d; SPEED: %f",
                  statusStr,
@@ -162,14 +201,17 @@ _Noreturn void dev_service_task(__unused void* args)
                  angle_info.angle,
                  wind_speed_info.wind_ticks,
                  wind_speed_info.wind);
+        ESP_LOGI(TAG_WIND, "NMEA: %s", nmea_text);
+        nmea_bcast(nmea_text);
 
-        vTaskDelayUntil(&time, configTICK_RATE_HZ)
+        vTaskDelayUntil(&time, configTICK_RATE_HZ / 2)
     }
 }
 
 int sensor_response(char* buffer, ssize_t capacity)
 {
     const char* statusStr = sensor_status();
+    //todo angle alarm
     return snprintf(buffer, capacity, "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,\"speed\": %3.1f}", statusStr,
                     angle_info.agc,
                     angle_info.angle, wind_speed_info.wind);

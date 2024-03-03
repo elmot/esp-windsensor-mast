@@ -7,7 +7,7 @@
 extern const char* TAG_WIND;
 _Noreturn void sensor_task(void* args);
 
-_Noreturn void dev_service_task(void* args);
+_Noreturn void data_broadcast_task(void* args);
 
 _Noreturn void wind_freq_generator(void* args);
 
@@ -53,3 +53,6 @@ void initAngleSensor();
 
 bool readAngle(volatile angle_info_t* angle_info);
 
+void nmea_bcast_init();
+
+void nmea_bcast(char* text);
