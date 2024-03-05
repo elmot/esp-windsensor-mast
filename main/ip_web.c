@@ -1,7 +1,6 @@
 #include "windsensor.h"
 #include "lwip/sockets.h"
 
-#define NMEA_PORT 9000
 const char* WEB_TAG = "web";
 extern const char root_start[] asm("_binary_root_html_start");
 extern const char root_end[] asm("_binary_root_html_end");
@@ -19,11 +18,13 @@ esp_err_t page_get_handler(httpd_req_t* req, const char* const start, const char
     return ESP_OK;
 }
 
+// ReSharper disable once CppDFAConstantFunctionResult
 static esp_err_t wind_get_handler(httpd_req_t* req)
 {
     return page_get_handler(req, root_start, root_end);
 }
 
+// ReSharper disable once CppDFAConstantFunctionResult
 static esp_err_t setup_get_handler(httpd_req_t* req)
 {
     return page_get_handler(req, setup_start, setup_end);
@@ -74,6 +75,7 @@ static const httpd_uri_t data = {
 };
 
 // HTTP Error (404) Handler - Redirects all requests to the root page
+// ReSharper disable once CppDFAConstantFunctionResult
 esp_err_t http_404_error_handler(httpd_req_t* req, __unused httpd_err_code_t err)
 {
     return root_get_handler(req);
@@ -101,21 +103,24 @@ void nmea_bcast_init()
     }
     else
     {
-        ESP_LOGI(WEB_TAG, "Socket created, sending to port %d", NMEA_PORT);
+        ESP_LOGI(WEB_TAG, "Socket created, sending to port %d", CONFIG_NMEA_UDP_PORT);
     }
 }
 
-void nmea_bcast(char* text)
+void nmea_bcast(const char* text)
 {
+#ifdef __CLION_IDE__
+#define __builtin_bswap16(a) a
+#endif
     const struct sockaddr_in dest_addr = {
         .sin_family = AF_INET,
         .sin_addr = {
             .s_addr = IPADDR_BROADCAST
         },
-        .sin_port = htons(NMEA_PORT)
+        .sin_port = htons(CONFIG_NMEA_UDP_PORT)
     };
 
-    size_t sendlen = sendto(sock,text,strlen(text),0,(struct sockaddr *)&dest_addr,sizeof (dest_addr));
+    const size_t sendlen = sendto(sock,text,strlen(text),0,(struct sockaddr *)&dest_addr,sizeof (dest_addr));
     if (sendlen <= 0) {
         ESP_LOGD(WEB_TAG, "send failed, sendto returned  %d", sendlen);
     }

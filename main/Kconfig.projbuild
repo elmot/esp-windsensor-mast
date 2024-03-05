@@ -36,4 +36,20 @@ menu "Windsensor Configuration"
         int "I2C master frequency"
         default 400000
 
+    config NMEA_UDP_PORT
+        int "NMEA UDP broadcast port"
+        default 9000
+
+    config SPEED_SENSOR_GPIO
+        int "Speed signal input pin"
+        default 4
+
+    config SIMULATION_GPIO
+        int "Simulated speed signal pin"
+        default 5
+
+    config SPEED_SENSOR_DEBOUNCE_MS
+        int "Speed sensor debouncing time, ms"
+        default 30
+
 endmenu

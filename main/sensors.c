@@ -4,10 +4,6 @@
 #include "esp_log.h"
 #include "math.h"
 
-#define PORT 9000
-
-#define SPEED_SENSOR_GPIO GPIO_NUM_4
-#define SPEED_SENSOR_DEBOUNCE_MS (30)
 #define WIND_STALL_MS (2000)
 #define TIMER_RESOLUTION_HZ (1000000)
 
@@ -33,7 +29,7 @@ static volatile gptimer_handle_t speed_gptimer_handle = 0;
 static bool IRAM_ATTR wind_speed_callback(struct gptimer_t*, const gptimer_alarm_event_data_t*, void*)
 {
     speed_tick_counter++;
-    if (speed_tick_counter < SPEED_SENSOR_DEBOUNCE_MS) return false;
+    if (speed_tick_counter < CONFIG_SPEED_SENSOR_DEBOUNCE_MS) return false;
     if (speed_tick_counter >= WIND_STALL_MS)
     {
         wind_speed_info.wind_ticks = -1;
@@ -42,7 +38,7 @@ static bool IRAM_ATTR wind_speed_callback(struct gptimer_t*, const gptimer_alarm
         speed_tick_counter = WIND_STALL_MS + 1;
         return false;
     }
-    bool level = gpio_get_level(SPEED_SENSOR_GPIO);
+    bool level = gpio_get_level(CONFIG_SPEED_SENSOR_GPIO);
     if (level == 1)
     {
         speed_phase = 1;
@@ -67,7 +63,7 @@ void initSpeedGpioAndTimers()
 {
     const gpio_config_t io_conf = {
         //bit mask of the pins that you want to set,e.g.GPIO18/19
-        .pin_bit_mask = BIT64(SPEED_SENSOR_GPIO),
+        .pin_bit_mask = BIT64(CONFIG_SPEED_SENSOR_GPIO),
         //disable interrupt
         .intr_type = GPIO_INTR_DISABLE,
         //set as output mode

@@ -1,8 +1,6 @@
 #include "windsensor.h"
 #include "driver/gpio.h"
 
-#define SIM_PIN GPIO_NUM_5
-
 _Noreturn void wind_freq_generator(void* args)
 {
     //zero-initialize the config structure.
@@ -10,7 +8,7 @@ _Noreturn void wind_freq_generator(void* args)
 
     const gpio_config_t io_conf = {
         //bit mask of the pins that you want to set,e.g.GPIO18/19
-        .pin_bit_mask = BIT64(SIM_PIN),
+        .pin_bit_mask = BIT64(CONFIG_SIMULATION_GPIO),
         //disable interrupt
         .intr_type = GPIO_INTR_DISABLE,
         //set as output mode
@@ -30,9 +28,9 @@ _Noreturn void wind_freq_generator(void* args)
     for (int loopCounter = 0; true; loopCounter = (loopCounter + 1) % 50)
     {
         int ticks = wind_ticks[loopCounter /10];
-        gpio_set_level(SIM_PIN, 0);
+        gpio_set_level(CONFIG_SIMULATION_GPIO, 0);
         vTaskDelayUntil(&time, ticks);
-        gpio_set_level(SIM_PIN, 1);
+        gpio_set_level(CONFIG_SIMULATION_GPIO, 1);
         vTaskDelayUntil(&time, ticks);
     }
 }

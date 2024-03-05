@@ -4,7 +4,9 @@
 #include "esp_http_server.h"
 #include "ota.h"
 
+
 extern const char* TAG_WIND;
+
 _Noreturn void sensor_task(void* args);
 
 _Noreturn void data_broadcast_task(void* args);
@@ -55,4 +57,4 @@ bool readAngle(volatile angle_info_t* angle_info);
 
 void nmea_bcast_init();
 
-void nmea_bcast(char* text);
+void nmea_bcast(const char* text);
