@@ -6,7 +6,7 @@
 
 #define PORT 3333
 
-#define SPEED_SENSOR_GPIO GPIO_NUM_9
+#define SPEED_SENSOR_GPIO GPIO_NUM_27
 #define SPEED_SENSOR_DEBOUNCE_MS (30)
 #define TIMER_RESOLUTION_HZ (1000000)
 #define WIND_STALL_MS (2000)
@@ -67,7 +67,7 @@ void initSpeedGpioAndTimers()
 {
     const gpio_config_t io_conf = {
         //bit mask of the pins that you want to set,e.g.GPIO18/19
-        .pin_bit_mask = BIT64(GPIO_NUM_9),
+        .pin_bit_mask = BIT64(GPIO_NUM_27),
         //disable interrupt
         .intr_type = GPIO_INTR_DISABLE,
         //set as output mode

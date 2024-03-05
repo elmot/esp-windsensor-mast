@@ -1,4 +1,7 @@
 #include "ota.h"
+
+#include <sys/param.h>
+
 #include "esp_ota_ops.h"
 #include "mbedtls/base64.h"
 #include "windsensor.h"
