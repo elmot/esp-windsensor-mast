@@ -16,6 +16,9 @@
     </style>
 </head>
 <body>
+<h1>Yanus Wind System Firmware Update</h1>
+<h3 style="color: saddlebrown">!!!&nbsp;Navigate back to <a href="/wind">Data page</a> if you don't know what are you doing here</h3>
+<a href="/about">About</a><br>
 <input type="file" name="ota_data">
 <br>
 <label for="passwd">Password:</label> <input id="passwd" type="password" name="ota_password">
@@ -77,7 +80,6 @@
                 const segmentDataLen = readInt32(byteArray, offset + 4)
                 const segment = byteArray.subarray(offset + 8, segmentDataLen)
                 if (readInt32(segment, 0) ^ 0xABCD5432 === 0) {
-                    const decoder = new TextDecoder()
                     output.innerHTML += "<hr>AppName: " + extractCString(segment, 48, 32) + "<br>"
                         + "Version: " + extractCString(segment, 16, 32) + "<br>"
                         + "Build timestamp: " + extractCString(segment, 96, 112) + " "

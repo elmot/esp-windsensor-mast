@@ -1,6 +1,4 @@
 <!doctype html>
-<!--todo angle alarm-->
-<!--todo navigation to setup alarm-->
 <html lang="en">
 <head>
     <meta charset="UTF-8"/>
@@ -56,7 +54,6 @@
 
             > div#awsbox {
                 position: absolute;
-                background-color: white;
                 width: 100%;
                 bottom: 0;
                 text-align: center;
@@ -85,9 +82,17 @@
             right: 2cqw;
             top: 2cqw;
         }
+
+        body #awsbox {
+            background-color: #FFFFFF
+        }
+
+        body.warning #awsbox {
+            background-color: #ffa500
+        }
     </style>
 </head>
-<body>
+<body class="warninga">
 <div id="windDial">
     <div id="awsbox"><span id="aws">20</span><span class="topunit">m</span>/<span class="bottomunit">s</span></div>
     <canvas id="dial" width="500" height="500">
@@ -107,6 +112,14 @@
 </div>
 </body>
 <script type="text/javascript">
+    function drawWarning(warn) {
+        if (warn) {
+            document.body.classList.add("warning")
+        } else {
+            document.body.classList.remove("warning")
+        }
+    }
+
     function drawAwa(angle) {
         const arrowStyle = document.getElementById("windArrow").style
         if (typeof angle === 'number') {
@@ -129,11 +142,13 @@
         if (["FINE", "OK", "TOO_LOW", "TOO_HIGH"].includes(data.sensor)) {
             drawAwa(data.angle)
             drawAws(data.speed)
+            drawWarning(data.warning !== "NONE")
         } else {
             // noinspection JSUnresolvedReference
             drawAws(data.sensor)
             // noinspection JSUnresolvedReference
             drawAwa(data.sensor)
+            drawWarning(true)
         }
         setTimeout(requestData, 500);
     }

@@ -15,19 +15,27 @@ _Noreturn void wind_freq_generator(void* args);
 
 void registerHttpHandlers(httpd_handle_t server);
 
-typedef enum
+enum SENSOR_STATUS
 {
     ERROR, NO_MAGNET, FIELD_TOO_LOW, FIELD_TOO_HIGH, OK
-} SENSOR_STATUS;
+} ;
+
+enum WIND_WARNING
+{
+    NO_WARNING, TOO_CLOSE_TO_WIND, DEAD_RUN
+} ;
 
 typedef struct
 {
     volatile uint16_t average_time_ms;
     volatile uint16_t angle_corr;
+    volatile uint16_t dead_run_angle_warning;
+    volatile uint16_t too_close_angle_warning;
     volatile uint16_t last_raw_angle;
     volatile uint16_t last_angle;
     volatile uint16_t angle;
-    volatile SENSOR_STATUS status;
+    volatile enum SENSOR_STATUS status;
+    volatile enum WIND_WARNING wind_warning;
     volatile uint16_t agc;
 } angle_info_t;
 

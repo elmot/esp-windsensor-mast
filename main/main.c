@@ -111,6 +111,8 @@ void load_persistent_settings()
     if (status == ESP_ERR_NVS_NOT_FOUND) return;
     ESP_ERROR_CHECK_WITHOUT_ABORT(status);
     ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_u16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, (uint16_t*)&angle_info.angle_corr));
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_u16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, (uint16_t*)&angle_info.dead_run_angle_warning));
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_u16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, (uint16_t*)&angle_info.too_close_angle_warning));
     ESP_ERROR_CHECK_WITHOUT_ABORT(
         nvs_get_u16(nvs_handle, NVS_KEY_ANGLE_AVERAGE_MS, (uint16_t*)&angle_info.average_time_ms));
     ESP_ERROR_CHECK_WITHOUT_ABORT(
@@ -125,6 +127,8 @@ void save_persistent_settings()
     nvs_handle_t nvs_handle;
     ESP_ERROR_CHECK(nvs_open(NVS_NS, NVS_READWRITE, &nvs_handle));
     ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, angle_info.angle_corr));
+    ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, angle_info.dead_run_angle_warning));
+    ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_ANGLE_CORRECTION, angle_info.too_close_angle_warning));
     ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_ANGLE_AVERAGE_MS, angle_info.average_time_ms));
     ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_WIND_SPEED, wind_speed_info.wind_speed_calib));
     ESP_ERROR_CHECK(nvs_set_i16(nvs_handle, NVS_KEY_WIND_SPEED_TICKS, wind_speed_info.wind_speed_calib_ticks));

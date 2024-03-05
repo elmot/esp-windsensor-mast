@@ -14,7 +14,12 @@ static double averaging_buffer_sin[AVERAGING_BUFFER_SIZE];
 static double averaging_buffer_cos[AVERAGING_BUFFER_SIZE];
 static size_t averaging_idx = 0;
 
-volatile angle_info_t angle_info = {.average_time_ms = 2000, .angle_corr = 1};
+volatile angle_info_t angle_info = {
+    .average_time_ms = 2000,
+    .angle_corr = 1,
+    .too_close_angle_warning = 30,
+    .dead_run_angle_warning = 15
+};
 volatile wind_speed_info_t wind_speed_info = {
     .wind = 3, .wind_ticks = -1, .wind_speed_calib = 5, .wind_speed_calib_ticks = 700
 };
@@ -123,6 +128,21 @@ _Noreturn void sensor_task(__unused void* args)
                 sum_cos += averaging_buffer_cos[i];
             }
             angle_info.angle = (360 + (int)round(atan2(sum_sin, sum_cos) * 360 / M_PI)) % 360;
+            if (angle_info.angle < angle_info.too_close_angle_warning ||
+                angle_info.angle > (360 - angle_info.too_close_angle_warning))
+            {
+                angle_info.wind_warning = TOO_CLOSE_TO_WIND;
+            }
+            else if (angle_info.angle > (180 - angle_info.dead_run_angle_warning) &&
+                angle_info.angle < (180 + angle_info.too_close_angle_warning))
+
+            {
+                angle_info.wind_warning = DEAD_RUN;
+            }
+            else
+            {
+                angle_info.wind_warning = NO_WARNING;
+            }
         }
         xTaskDelayUntil(&time, configTICK_RATE_HZ * angle_info.average_time_ms / 1000 / AVERAGING_BUFFER_SIZE);
     }
@@ -142,6 +162,27 @@ const char* sensor_status()
         return "FINE";
     default:
         return "ERROR";
+    }
+}
+
+const char* wind_warning_text()
+{
+    switch (angle_info.status)
+    {
+    case FIELD_TOO_LOW:
+    case FIELD_TOO_HIGH:
+    case OK:
+        break;
+    case NO_MAGNET:
+        return "NO_MAGNET";
+    default:
+        return "ERROR";
+    }
+    switch (angle_info.wind_warning)
+    {
+    case DEAD_RUN: return "DEAD_RUN";
+    case TOO_CLOSE_TO_WIND: return "TOO_CLOSE_TO_WIND";
+    default: return "NONE";
     }
 }
 
@@ -189,14 +230,19 @@ _Noreturn void data_broadcast_task(__unused void* args)
         appendCheckSum(nmea_text, sizeof nmea_text);
 
         ESP_LOGI(TAG_WIND,
-                 "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; AVERAGE_ANGLE: %3d; SPEED_TICKS: %d; SPEED: %f",
+                 "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; WARN: %s; AVERAGE_ANGLE: %3d; SPEED_TICKS: %d; SPEED: %f",
                  statusStr,
                  angle_info.agc,
                  angle_info.last_raw_angle,
                  angle_info.last_angle,
+                 wind_warning_text(),
                  angle_info.angle,
                  wind_speed_info.wind_ticks,
                  wind_speed_info.wind);
+        ESP_LOGI(TAG_WIND, "NMEA: %s", nmea_text);
+        nmea_bcast(nmea_text);
+        snprintf(nmea_text, sizeof nmea_text - 5, "$PEWWT,%s", wind_warning_text());
+        appendCheckSum(nmea_text, sizeof nmea_text);
         ESP_LOGI(TAG_WIND, "NMEA: %s", nmea_text);
         nmea_bcast(nmea_text);
 
@@ -207,8 +253,9 @@ _Noreturn void data_broadcast_task(__unused void* args)
 int sensor_response(char* buffer, ssize_t capacity)
 {
     const char* statusStr = sensor_status();
-    //todo angle alarm
-    return snprintf(buffer, capacity, "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,\"speed\": %3.1f}", statusStr,
+    return snprintf(buffer, capacity,
+                    "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,\"speed\": %3.1f,\"warning\": \"%s\"}",
+                    statusStr,
                     angle_info.agc,
-                    angle_info.angle, wind_speed_info.wind);
+                    angle_info.angle, wind_speed_info.wind, wind_warning_text());
 }
