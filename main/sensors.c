@@ -4,12 +4,12 @@
 #include "esp_log.h"
 #include "math.h"
 
-#define PORT 3333
+#define PORT 9000
 
-#define SPEED_SENSOR_GPIO GPIO_NUM_27
+#define SPEED_SENSOR_GPIO GPIO_NUM_4
 #define SPEED_SENSOR_DEBOUNCE_MS (30)
-#define TIMER_RESOLUTION_HZ (1000000)
 #define WIND_STALL_MS (2000)
+#define TIMER_RESOLUTION_HZ (1000000)
 
 #define AVERAGING_BUFFER_SIZE  (20)
 const char* TAG_WIND = "mech-wind";
@@ -67,7 +67,7 @@ void initSpeedGpioAndTimers()
 {
     const gpio_config_t io_conf = {
         //bit mask of the pins that you want to set,e.g.GPIO18/19
-        .pin_bit_mask = BIT64(GPIO_NUM_27),
+        .pin_bit_mask = BIT64(SPEED_SENSOR_GPIO),
         //disable interrupt
         .intr_type = GPIO_INTR_DISABLE,
         //set as output mode

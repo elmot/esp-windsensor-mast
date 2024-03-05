@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="FLASH_MONITOR COM18" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="monitor -p COM18" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="true" EMULATE_TERMINAL="false" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="esp-windsensor-mast" TARGET_NAME="flash" CONFIG_NAME="Debug-MinGW ESP32-c3 5.0.2" RUN_PATH="C:/Espressif/tools/idf-exe/1.0.3/idf.py.exe">
+    <envs>
+      <env name="IDF_PATH" value="C:\Espressif\frameworks\esp-idf-master" />
+    </envs>
+    <method v="2">
+      <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+    </method>
+  </configuration>
+</component>
