@@ -60,10 +60,10 @@ bool report_error(httpd_req_t* req, esp_err_t errorCode, const char* fileName, i
 
 void httpd_printf(httpd_req_t* req, const char* format, ...)
 {
-    char buffer[200];
+    char buffer[400];
     va_list argptr;
     va_start(argptr, format);
-    vsnprintf(buffer, 199, format, argptr);
+    vsnprintf(buffer, 399, format, argptr);
     va_end(argptr);
     httpd_resp_sendstr_chunk(req, buffer);
     ESP_LOGI(OTA_TAG, "HTTP: %s", buffer);
@@ -73,17 +73,33 @@ static esp_err_t ota_about_get_handler(httpd_req_t* req)
 {
     const esp_app_desc_t* desc = esp_app_get_description();
     const esp_partition_t* currentPartition = esp_ota_get_running_partition();
+#define STRINGIFY(x) #x
+#define INT_TO_STRING(x) STRINGIFY(x)
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_set_hdr(req, "Refresh","3");
+    httpd_resp_set_hdr(req, "Refresh", "3");
     httpd_printf(req, "<html><head><title>About</title></head>"
                  "<body><h1>Yanus wind system</h1>");
-    httpd_printf(req, "Name: %s<br>", desc->project_name);
-    httpd_printf(req, "Version: %s<br>", desc->version);
-    httpd_printf(req, "Build timestamp: %s %s<br>", desc->date, desc->time);
-    httpd_printf(req, "IDF version: %s", desc->idf_ver);
-    httpd_printf(req, "<hr>");
-    httpd_printf(req, "Current Partition: %s (0x%08x)<br>", currentPartition->label, currentPartition->address);
-    httpd_printf(req, "Angle sensor status: %s; measured angle: %u<br>", sensor_status(), angle_info.last_angle);
+    httpd_printf(req, "Name: %s<br>Version: %s<br>", desc->project_name, desc->version);
+    httpd_printf(req, "Build timestamp: %s %s<br>IDF version: %s<br>"
+                 "Current Partition: %s (0x%08x)<br>",
+                 desc->date, desc->time, desc->idf_ver,
+                 currentPartition->label, currentPartition->address);
+    httpd_printf(req, "<hr>GPIO map:"
+                 "<br>I<sub>2</sub> SCL:" INT_TO_STRING(CONFIG_I2C_MASTER_SCL)
+                 "<br>I<sub>2</sub> SDA:" INT_TO_STRING(CONFIG_I2C_MASTER_SDA)
+                 "<br>Speed sensor: " INT_TO_STRING(CONFIG_SPEED_SENSOR_GPIO)
+                 "<br>Speed Simulator signal: " INT_TO_STRING(CONFIG_SIMULATION_GPIO)
+    );
+
+    httpd_printf(req, "<hr>Angle sensor status: %s; measured angle: %u; speed sensor pulse: %d ms"
+        "<hr><a href=\"/wind\">Wind</a> | "
+        "<a href=\"/setup\">Setup</a> | "
+        "<a href=\"/setup/ota\">Firmware update</a><br>"
+        ,
+                 sensor_status(),
+                 angle_info.last_angle,
+                 wind_speed_info.wind_ticks);
+
 
     httpd_printf(req, "</body></html>");
     httpd_resp_send_chunk(req, NULL, 0);
