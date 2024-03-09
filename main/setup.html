@@ -4,57 +4,36 @@
     <meta charset="UTF-8">
     <title>Yanus Wind System - Setup</title>
     <style>
-        html{
-            margin:0;
+        html {
+            margin: 0;
         }
+
         body {
             margin: auto;
             height: 100vh;
             width: 100%;
-            background-color: #AAFFAA; /*todo remove*/
+            background-color: #5f9ea0;
             font-size: 5vh;
             max-font-size: 4vw;
 
             > div {
                 display: none;
-                background-color: pink; /*todo remove*/
             }
 
             > #nav {
+                background-color: cadetblue;
+                display: inline-block;
+                margin-bottom: 1vh;
                 width: 100%;
-                background-color: #AAAAFF;
-                display: block;
             }
 
-            > #kbd {
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: space-evenly;
-                row-gap: 0.2em;
-                padding: 3%;
-
-                > div {
-                    background-color: #AAAAFF;
-                    text-anchor: middle;
-                    text-align: center;
-                    width: 24%;
-                    cursor: pointer;
-                    border: 1vw outset gray;
-                }
-
-                > div#ok {
-                    background-color: #AAFFAA;
-                }
-            }
         }
-        .inputbox {
-            padding: 3%;
-            > input {
-                width: 60vw;
-                height: 15vh;
-                font-size: 10vh;
-            }
+
+        input {
+            height: 5vh;
+            font-size: 3vh;
         }
+
         body.angle {
             > #b_angle {
                 display: block;
@@ -66,6 +45,7 @@
             }
         }
 
+        /*noinspection CssUnusedSymbol*/
         body.speed {
             > div#b_speed {
                 display: block;
@@ -77,82 +57,284 @@
             }
         }
 
-        body.aver {
-            > div#b_aver {
+        /*noinspection CssUnusedSymbol*/
+        body.ext {
+            > div#b_ext {
                 display: block;
             }
 
-            > #nav #aver {
-                font-weight: bold;
-                font-size: larger;
-            }
-        }
-
-        body.warn {
-            > div#b_warn {
-                display: block;
-            }
-
-            > #nav #warn {
+            > #nav #ext {
                 font-size: larger;
                 font-weight: bold;
             }
         }
 
+        #angleKbd {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            grid-gap: 2vmin;
+        }
+
+        #compass {
+            grid-row: 1 / 4;
+            grid-column: 2;
+            width: 45vmin;
+            height: 45vmin;
+            background-color: beige;
+            border-radius: 50%;
+            display: block;
+            position: sticky;
+            z-index: -1;
+
+            > span {
+                width: 100%;
+                height: 100%;
+                display: block;
+                position: absolute;
+                background-repeat: no-repeat;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'  fill='%23888888' viewBox='0 0 1792 1792'%3E%3Cpath d='M897 0l198.5 431l-157.5-84.5v982.7l123.6 99.3V1792l-165-133.2L730.4 1792v-363.6l125.6-99.3V346.8l-159.5 84.5L897 0z'/%3E%3C/svg%3E");
+            }
+        }
+
+        #new_wind_dir {
+            filter: brightness(20%);
+        }
+
+        #windKeys {
+            display: grid;
+            grid-template-columns: auto auto auto auto;
+            grid-gap: 1vmin;
+            margin: 3vmin;
+        }
+
+        button {
+            font-size: 8vmin;
+            border: 1vmin #606060 outset;
+            padding: 1vmin;
+            text-align: center;
+            background: #BBBBBB;
+            cursor: pointer;
+            user-select: none;
+            tab-index: 100;
+        }
+
+        /*Localization*/
+        html[lang="ru"] *[lang="en"] {
+            display: none
+        }
+
+        html[lang="en"] *[lang="ru"] {
+            display: none
+        }
     </style>
+    <script>
+        function navLang(lang) {
+            event.preventDefault()
+            document.body.parentElement.lang = lang
+        }
+    </script>
 </head>
 
-<body class="speed">
+<body class="angle">
 <div id="nav">
-    <a href="#" id="angle">Angle&nbsp;correction</a> |
-    <a href="#" id="speed">Speed&nbsp;setup</a> |
-    <a href="#" id="aver">Angle&nbsp;averaging</a> |
-    <a href="#" id="warn">Warnings</a>
+    <div lang="en">Yanus wind system - Settings</div>
+    <div lang="ru">Yanus wind system - Настройки</div>
+    <a href="#angle" id="angle"><span lang="en">Angle</span><span lang="ru">Угол</span></a> |
+    <a href="#speed" id="speed"><span lang="en">Speed</span><span lang="ru">Скорость</span></a> |
+    <a href="#ext" id="ext"><span lang="en">Ext params</span><span lang="ru">Расш</span></a> |
+    <a onclick="navLang('en')" href="#" lang="ru">En</a>
+    <a onclick="navLang('ru')" href="#" lang="en">Ru</a>
+    <a href="/wind" lang="en">Exit</a>
+    <a href="/wind" lang="ru">Выход</a>
 </div>
-<div class="inputbox" id="b_angle"></div>
-<div class="inputbox" id="b_speed">
-    <label for="i_angle">Wind now:</label><br>
-    <input type="text" autocomplete="off" id="i_angle">
-    <sup>m</sup>/<sib>s</sib></div>
-<div class="inputbox" id="b_aver">Angle&nbsp;averaging</div>
-<div class="inputbox" id="b_warn">Warnings</div>
-<div class="inputbox" id="kbd">
-    <div id="1">1</div>
-    <div id="2">2</div>
-    <div id="3">3</div>
-    <div id="4">4</div>
-    <div id="5">5</div>
-    <div id="6">6</div>
-    <div id="7">7</div>
-    <div id="8">8</div>
-    <div id="9">9</div>
-    <div id="bk"><=</div>
-    <div id="0">0</div>
-    <div id="ok">&#x23ce;</div>
-</div>
-<script>
+<div class="inputbox" id="b_angle">
+    <form method="post" action="/setup/save" id="angle_form">
+        <input type="hidden" name="hash" value="angle">
+        <input type="hidden" name="additionalAngleCorrection" value="0">
+    </form>
 
-    document.getElementById("nav").addEventListener("click", event => {
-        if (event.target !== event.currentTarget) {
-            document.body.className = event.target.id
-        }
-    })
-    document.getElementById("kbd").addEventListener("click", event => {
-        if (event.target !== event.currentTarget) {
-            let element = document.getElementById("i_angle")
-            element.focus()
-            switch (event.target.id) {
-                case "bk":
-                    element.value = element.value.substring(0, Math.max(0, element.value.length - 1))
-                    break
-                case "ok":
-                    alert(element.value)
-                    break
-                default:
-                    element.value += event.target.id
-            }
-        }
-    })
-</script>
+    <div id="angleKbd">
+        <button>-1</button>
+        <span id="compass">
+                <span id="old_wind_dir"></span>
+                <span id="new_wind_dir"></span>
+            </span>
+        <button>+1</button>
+        <button>-5</button>
+        <button>+5</button>
+        <button>-30</button>
+        <button>+30</button>
+    </div>
+    <hr>
+    <span lang="en">Wind angle now:</span><span lang="ru">Угол ветра сейчас:</span>
+    <span id="wind_now"></span>
+    <br>
+    <span lang="en">Wind angle corr:</span><span lang="ru">Угол ветра корр:</span>
+    <span id="wind_corr"></span>
+    <br>
+    <button id="save_angle">Save</button>
+</div>
+<div id="b_speed">
+    <form id="speed_form" method="post" action="/setup/save">
+        <input type="hidden" name="hash" value="speed">
+        <input type="hidden" name="speed" value="0">
+        <input type="hidden" name="speedTicks" value="0">
+    </form>
+    <span lang="en">Wind now:</span>
+    <span lang="ru">Ветер сейчас:</span>
+    <span id="current_wind_speed"></span>
+    <hr>
+    <span lang="en">Set to:</span>
+    <span lang="ru">Установить в:</span>
+    <div id="windKeys">
+        <button>2</button>
+        <button>3</button>
+        <button>4</button>
+        <button>5</button>
+        <button>6</button>
+        <button>7</button>
+        <button>8</button>
+        <button>9</button>
+        <button>10</button>
+        <button>12</button>
+        <button>13</button>
+        <button>14</button>
+        <button>15</button>
+        <button>16</button>
+        <button>17</button>
+        <button>18</button>
+        <button>19</button>
+        <button>20</button>
+        <button>21</button>
+        <button>22</button>
+    </div>
+</div>
+<div class="inputbox" id="b_ext">
+    <form method="post" action="/setup/save">
+        <input type="hidden" name="hash" value="ext">
+        <label for="averTime" lang="en">Averaging time, ms</label>
+        <label for="averTime" lang="ru">Время усреднения, мсек</label>
+        <input type="number" min="500" max="10000" id="averTime" name="averTime">
+        <br>
+        <label for="noSailAngle" lang="en">No sail warning, grad</label>
+        <label for="noSailAngle" lang="ru">Левентик, град</label>
+        <input type="number" min="3" max="80" id="noSailAngle" name="noSailAngle">
+        <br>
+        <label for="deadRunAngle" lang="en">Dead run warning, grad</label>
+        <label for="deadRunAngle" lang="ru">Фордевинд, град</label>
+        <input type="number" min="3" max="80" id="deadRunAngle" name="deadRunAngle">
+        <br>
+        <button type="submit" id="save_ext">Save</button>
+    </form>
+</div>
 </body>
+<script>
+    const fetchInit = {
+        method: "GET", mode: "no-cors", cache: "no-cache", redirect: "follow"
+    }
+    // const dataUrl = "data.json"
+    const dataUrl = "/data?" + Math.random()
+
+    fetch(dataUrl, fetchInit)
+        .then((response) => {
+            response.json()
+                .then((data) => {
+                    for (const v of ["averTime", "noSailAngle", "deadRunAngle"])
+                        document.getElementById(v).value = data[v]
+                })
+        })
+
+    async function requestData() {
+        await fetch(dataUrl, fetchInit)
+            .then((response) => {
+                    response.json()
+                        .then((data) => {
+                                tickData(data)
+                            }, (error) => {
+                                console.warn(error)
+                                tickData({sensor: "Data error"})
+                            }
+                        )
+                }, (error) => {
+                    console.warn(error)
+                    tickData({sensor: "Net error"})
+                }
+            )
+    }
+
+    let windAngleCorrection = 0
+
+    function tickData(data) {
+        // noinspection JSUnresolvedReference
+        let windSpeed
+        let windAngle
+        let windAngleCorrected
+        let speedTicks
+        if (["FINE", "OK", "TOO_LOW", "TOO_HIGH"].includes(data.sensor)) {
+            windSpeed = data.speed
+            windAngle = data.angle + "deg"
+            windAngleCorrected = (data.angle + windAngleCorrection + 360) % 360 + "deg"
+            speedTicks = data.speedTicks
+        } else {
+            // noinspection JSUnresolvedReference
+            windSpeed = data.sensor
+            windAngle = data.sensor
+            windAngleCorrected = data.sensor
+            speedTicks = 0
+        }
+        document.getElementById("current_wind_speed").innerText = windSpeed
+        document.getElementById("wind_now").innerText = windAngle
+        document.getElementById("wind_corr").innerText = windAngleCorrected
+        document.getElementById("old_wind_dir").style.rotate = windAngle
+        document.getElementById("new_wind_dir").style.rotate = windAngleCorrected
+        document.querySelector("input[name=speedTicks]").value = speedTicks
+        setTimeout(requestData, 500);
+    }
+
+    requestData()
+    for (const td of document.querySelectorAll("#windKeys button")) {
+        const value = Number.parseInt(td.innerText);
+        td.addEventListener("click", function () {
+            if (confirm("Set current wind to " + value + "m/s?")) {
+                const form = document.getElementById("speed_form")
+                form.querySelector("input[name=speed]").value = value
+                form.submit()
+            }
+        })
+    }
+    for (const td of document.querySelectorAll("#angleKbd button")) {
+        const value = Number.parseInt(td.innerText);
+        td.addEventListener("click", function () {
+            windAngleCorrection = (360 + windAngleCorrection + value) % 360
+        })
+    }
+    document.getElementById("save_angle").addEventListener("click", () => {
+        if (confirm("Save angle correction?")) {
+            document.querySelector("input[name=additionalAngleCorrection]").value = windAngleCorrection
+            document.getElementById("angle_form").submit()
+        }
+    })
+    document.getElementById("save_ext").addEventListener("click", (e) => {
+        if (!confirm("Save?")) {
+            e.preventDefault()
+        }
+    })
+
+    function hashChange() {
+        switch (location.hash) {
+            case "#speed":
+                document.body.className = "speed";
+                break
+            case "#ext":
+                document.body.className = "ext";
+                break
+            default:
+                document.body.className = "angle";
+                break
+        }
+    }
+
+    window.addEventListener("hashchange", hashChange)
+    hashChange()
+</script>
 </html>

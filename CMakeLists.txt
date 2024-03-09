@@ -4,3 +4,5 @@ cmake_minimum_required(VERSION 3.16)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(esp-windsensor-mast)
+
+set(CONFIG_LWIP_MAX_SOCKETS 16 CACHE STRING "LWIP parameter at maximum")

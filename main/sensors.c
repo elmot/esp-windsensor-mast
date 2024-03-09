@@ -8,7 +8,6 @@
 #define TIMER_RESOLUTION_HZ (1000000)
 
 #define AVERAGING_BUFFER_SIZE  (20)
-const char* TAG_WIND = "mech-wind";
 
 static double averaging_buffer_sin[AVERAGING_BUFFER_SIZE];
 static double averaging_buffer_cos[AVERAGING_BUFFER_SIZE];
@@ -17,8 +16,8 @@ static size_t averaging_idx = 0;
 volatile angle_info_t angle_info = {
     .average_time_ms = 2000,
     .angle_corr = 1,
-    .too_close_angle_warning = 30,
-    .dead_run_angle_warning = 15
+    .too_close_angle = 30,
+    .dead_run_angle = 15
 };
 volatile wind_speed_info_t wind_speed_info = {
     .wind = 3, .wind_ticks = -1, .wind_speed_calib = 5, .wind_speed_calib_ticks = 700
@@ -128,13 +127,13 @@ _Noreturn void sensor_task(__unused void* args)
                 sum_cos += averaging_buffer_cos[i];
             }
             angle_info.angle = (360 + (int)round(atan2(sum_sin, sum_cos) * 360 / M_PI)) % 360;
-            if (angle_info.angle < angle_info.too_close_angle_warning ||
-                angle_info.angle > (360 - angle_info.too_close_angle_warning))
+            if (angle_info.angle < angle_info.too_close_angle ||
+                angle_info.angle > (360 - angle_info.too_close_angle))
             {
                 angle_info.wind_warning = TOO_CLOSE_TO_WIND;
             }
-            else if (angle_info.angle > (180 - angle_info.dead_run_angle_warning) &&
-                angle_info.angle < (180 + angle_info.too_close_angle_warning))
+            else if (angle_info.angle > (180 - angle_info.dead_run_angle) &&
+                angle_info.angle < (180 + angle_info.too_close_angle))
 
             {
                 angle_info.wind_warning = DEAD_RUN;
@@ -229,7 +228,7 @@ _Noreturn void data_broadcast_task(__unused void* args)
         }
         appendCheckSum(nmea_text, sizeof nmea_text);
 
-        ESP_LOGI(TAG_WIND,
+        ESP_LOGD(TAG_SENSOR,
                  "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; WARN: %s; AVERAGE_ANGLE: %3d; SPEED_TICKS: %d; SPEED: %f",
                  statusStr,
                  angle_info.agc,
@@ -239,14 +238,14 @@ _Noreturn void data_broadcast_task(__unused void* args)
                  angle_info.angle,
                  wind_speed_info.wind_ticks,
                  wind_speed_info.wind);
-        ESP_LOGI(TAG_WIND, "NMEA: %s", nmea_text);
+        ESP_LOGD(TAG_SENSOR, "NMEA: %s", nmea_text);
         nmea_bcast(nmea_text);
         snprintf(nmea_text, sizeof nmea_text - 5, "$PEWWT,%s", wind_warning_text());
         appendCheckSum(nmea_text, sizeof nmea_text);
-        ESP_LOGI(TAG_WIND, "NMEA: %s", nmea_text);
+        ESP_LOGD(TAG_SENSOR, "NMEA: %s", nmea_text);
         nmea_bcast(nmea_text);
 
-        vTaskDelayUntil(&time, configTICK_RATE_HZ / 2)
+        vTaskDelayUntil(&time, configTICK_RATE_HZ / 2);
     }
 }
 
@@ -254,8 +253,13 @@ int sensor_response(char* buffer, ssize_t capacity)
 {
     const char* statusStr = sensor_status();
     return snprintf(buffer, capacity,
-                    "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,\"speed\": %3.1f,\"warning\": \"%s\"}",
-                    statusStr,
-                    angle_info.agc,
-                    angle_info.angle, wind_speed_info.wind, wind_warning_text());
+                    "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,"
+                    "\"speedTicks\": %d,\"speed\": %3.1f,"
+                    "\"warning\": \"%s\","
+                    "\"averTime\": %d,\"noSailAngle\": %d,\"deadRunAngle\": %d}",
+                    statusStr, angle_info.agc, angle_info.angle,
+                    wind_speed_info.wind_ticks,wind_speed_info.wind,
+                    wind_warning_text(),
+                    angle_info.average_time_ms, angle_info.too_close_angle, angle_info.dead_run_angle
+    );
 }

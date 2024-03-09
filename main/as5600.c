@@ -21,7 +21,7 @@
 #define AS5600_STATUS_MD (0x20)
 
 void initAngleSensor() {
-    ESP_LOGI(TAG_WIND, "Initialize i2c");
+    ESP_LOGI(TAG_SENSOR, "Initialize i2c");
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
         .sda_io_num = CONFIG_I2C_MASTER_SDA, // select SDA GPIO specific to your project
@@ -37,7 +37,7 @@ void initAngleSensor() {
 
     ESP_ERROR_CHECK(
         i2c_driver_install(I2C_MASTER_PORT, conf.mode, I2C_MASTER_RX_BUF_DISABLE, I2C_MASTER_TX_BUF_DISABLE, 0));
-    ESP_LOGI(TAG_WIND, "i2c initialization done");
+    ESP_LOGI(TAG_SENSOR, "i2c initialization done");
 }
 
 bool readAngle(volatile angle_info_t* angle_info)

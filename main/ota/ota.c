@@ -85,17 +85,16 @@ static esp_err_t ota_about_get_handler(httpd_req_t* req)
                  desc->date, desc->time, desc->idf_ver,
                  currentPartition->label, currentPartition->address);
     httpd_printf(req, "<hr>GPIO map:"
-                 "<br>I<sub>2</sub> SCL:" INT_TO_STRING(CONFIG_I2C_MASTER_SCL)
-                 "<br>I<sub>2</sub> SDA:" INT_TO_STRING(CONFIG_I2C_MASTER_SDA)
+                 "<br>I<sub>2</sub>C SCL:" INT_TO_STRING(CONFIG_I2C_MASTER_SCL)
+                 "<br>I<sub>2</sub>C SDA:" INT_TO_STRING(CONFIG_I2C_MASTER_SDA)
                  "<br>Speed sensor: " INT_TO_STRING(CONFIG_SPEED_SENSOR_GPIO)
                  "<br>Speed Simulator signal: " INT_TO_STRING(CONFIG_SIMULATION_GPIO)
     );
 
     httpd_printf(req, "<hr>Angle sensor status: %s; measured angle: %u; speed sensor pulse: %d ms"
-        "<hr><a href=\"/wind\">Wind</a> | "
-        "<a href=\"/setup\">Setup</a> | "
-        "<a href=\"/setup/ota\">Firmware update</a><br>"
-        ,
+                 "<hr><a href=\"/wind\">Wind</a> | "
+                 "<a href=\"/setup\">Setup</a> | "
+                 "<a href=\"/setup/ota\">Firmware update</a><br>",
                  sensor_status(),
                  angle_info.last_angle,
                  wind_speed_info.wind_ticks);

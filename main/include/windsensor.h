@@ -5,7 +5,9 @@
 #include "ota.h"
 
 
-extern const char* TAG_WIND;
+#define TAG_SENSOR  "wind-sensor"
+#define TAG_WEB  "wind-comm"
+#define TAG_SYS  "wind-sys"
 
 _Noreturn void sensor_task(void* args);
 
@@ -18,19 +20,19 @@ void registerHttpHandlers(httpd_handle_t server);
 enum SENSOR_STATUS
 {
     ERROR, NO_MAGNET, FIELD_TOO_LOW, FIELD_TOO_HIGH, OK
-} ;
+};
 
 enum WIND_WARNING
 {
     NO_WARNING, TOO_CLOSE_TO_WIND, DEAD_RUN
-} ;
+};
 
 typedef struct
 {
     volatile uint16_t average_time_ms;
     volatile uint16_t angle_corr;
-    volatile uint16_t dead_run_angle_warning;
-    volatile uint16_t too_close_angle_warning;
+    volatile uint16_t dead_run_angle;
+    volatile uint16_t too_close_angle;
     volatile uint16_t last_raw_angle;
     volatile uint16_t last_angle;
     volatile uint16_t angle;
