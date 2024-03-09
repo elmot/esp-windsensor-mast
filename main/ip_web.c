@@ -2,6 +2,7 @@
 
 #include "windsensor.h"
 #include "lwip/sockets.h"
+#include "mbedtls/base64.h"
 
 extern const char root_start[] asm("_binary_root_html_start");
 extern const char root_end[] asm("_binary_root_html_end");
@@ -25,6 +26,9 @@ static esp_err_t wind_get_handler(httpd_req_t *req) {
 
 // ReSharper disable once CppDFAConstantFunctionResult
 static esp_err_t setup_get_handler(httpd_req_t *req) {
+    if (!verifySetupAuthorization(req)) {
+        return ESP_OK;
+    }
     return page_get_handler(req, setup_start, setup_end);
 }
 
@@ -40,7 +44,9 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
 
 // ReSharper disable once CppDFAConstantFunctionResult
 static esp_err_t setup_save_handler(httpd_req_t *req) {
-    // todo auth
+    if (!verifySetupAuthorization(req)) {
+        return ESP_OK;
+    }
 
     ESP_LOGI(TAG_WEB, "Saved params received");
 #define MAX_BODY_SIZE 400
@@ -190,4 +196,33 @@ void nmea_bcast(const char *text) {
     if (sendlen <= 0) {
         ESP_LOGD(TAG_WEB, "send failed, sendto returned  %d", sendlen);
     }
+}
+
+#define BASIC_AUTH_PREFIX "Basic "
+#define AUTH_HDR_BUF_SIZE 300
+
+bool verifySetupAuthorization( httpd_req_t *req) {
+    char buffer[AUTH_HDR_BUF_SIZE + 1];
+    buffer[AUTH_HDR_BUF_SIZE] = 0;
+    httpd_resp_set_hdr(req, "WWW-Authenticate", "Basic realm=\"Yanus Wind System Firmware Update\"");
+    if (httpd_req_get_hdr_value_str(req, "Authorization", buffer,AUTH_HDR_BUF_SIZE) != ESP_OK)
+    {
+        httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, NULL);
+        return false;
+    }
+    bool authOk = strncmp(buffer,BASIC_AUTH_PREFIX, sizeof BASIC_AUTH_PREFIX - 1) == 0;
+    if (authOk)
+    {
+        static unsigned char auth[200];
+        size_t auth_len;
+        unsigned char* base64Buffer = (unsigned char*)buffer + sizeof BASIC_AUTH_PREFIX - 1;
+        authOk = mbedtls_base64_decode(auth, 199, &auth_len,
+                                       base64Buffer, strlen((char*)base64Buffer)) == 0;
+        authOk &= strcmp((char*)auth, ":" CONFIG_SETUP_PASSWORD) == 0;
+    }
+    if (!authOk)
+    {
+        httpd_resp_send_err(req, HTTPD_401_UNAUTHORIZED, "Invalid password");
+    }
+    return authOk;
 }

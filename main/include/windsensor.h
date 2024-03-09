@@ -9,14 +9,6 @@
 #define TAG_WEB  "wind-comm"
 #define TAG_SYS  "wind-sys"
 
-_Noreturn void sensor_task(void* args);
-
-_Noreturn void data_broadcast_task(void* args);
-
-_Noreturn void wind_freq_generator(void* args);
-
-void registerHttpHandlers(httpd_handle_t server);
-
 enum SENSOR_STATUS
 {
     ERROR, NO_MAGNET, FIELD_TOO_LOW, FIELD_TOO_HIGH, OK
@@ -68,3 +60,13 @@ bool readAngle(volatile angle_info_t* angle_info);
 void nmea_bcast_init();
 
 void nmea_bcast(const char* text);
+
+_Noreturn void sensor_task(void* args);
+
+_Noreturn void data_broadcast_task(void* args);
+
+_Noreturn void wind_freq_generator(void* args);
+
+void registerHttpHandlers(httpd_handle_t server);
+
+bool verifySetupAuthorization( httpd_req_t *req);
