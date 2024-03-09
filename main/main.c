@@ -129,9 +129,9 @@ void load_persistent_settings() {
     }
     ESP_ERROR_CHECK_WITHOUT_ABORT(
             nvs_get_u16(nvs_handle, NVS_KEY_WIND_SPEED, (uint16_t *) &wind_speed_info.wind_speed_calib));
-    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_u16(nvs_handle,
+    ESP_ERROR_CHECK_WITHOUT_ABORT(nvs_get_u32(nvs_handle,
                                               NVS_KEY_WIND_SPEED_TICKS,
-                                              (uint16_t *) &wind_speed_info.wind_speed_calib_ticks));
+                                              (uint32_t *) &wind_speed_info.wind_speed_calib_ticks));
     nvs_close(nvs_handle);
     logNvsParams();
 }
@@ -143,7 +143,7 @@ void logNvsParams() {
                       " too close angle %d; "
                       " averaging time %d;"
                       " wind speed calibrated %d;"
-                      " wind speed ticks %d",
+                      " wind speed ticks %ld",
 
              angle_info.angle_corr,
              angle_info.dead_run_angle,
@@ -184,12 +184,12 @@ void save_persistent_settings() {
     ESP_ERROR_CHECK(nvs_set_u16(nvs_handle, NVS_KEY_ANGLE_TOO_CLOSE, angle_info.too_close_angle));
     ESP_ERROR_CHECK(nvs_set_u16(nvs_handle, NVS_KEY_ANGLE_AVERAGE_MS, angle_info.average_time_ms));
     ESP_ERROR_CHECK(nvs_set_u16(nvs_handle, NVS_KEY_WIND_SPEED, wind_speed_info.wind_speed_calib));
-    ESP_ERROR_CHECK(nvs_set_u16(nvs_handle, NVS_KEY_WIND_SPEED_TICKS, wind_speed_info.wind_speed_calib_ticks));
+    ESP_ERROR_CHECK(nvs_set_u32(nvs_handle, NVS_KEY_WIND_SPEED_TICKS, wind_speed_info.wind_speed_calib_ticks));
     ESP_ERROR_CHECK(nvs_commit(nvs_handle));
     nvs_close(nvs_handle);
 }
 
-void app_main(void) {
+__unused void app_main(void) {
     /*
         Turn of warnings from HTTP server as redirecting traffic will yield
         lots of invalid requests

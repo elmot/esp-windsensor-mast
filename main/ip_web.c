@@ -69,8 +69,8 @@ static esp_err_t setup_save_handler(httpd_req_t *req) {
     for (char *name = strtok_r(buffer, "=", &savePtr); name != NULL;) {
         char *valStr = strtok_r(NULL, "&", &savePtr);
         if (valStr == NULL) break;
-        uint val = strtol(valStr, NULL, 10);
-        ESP_LOGI(TAG_WEB, "Received param name: %s, value:%s, parsed: %d", name, valStr, val);
+        uint32_t val = strtol(valStr, NULL, 10);
+        ESP_LOGI(TAG_WEB, "Received param name: %s, value:%s, parsed: %ld", name, valStr, val);
         if (strcmp("averTime", name) == 0) {
             if (val >= 500 && val <= 10000) {
                 angle_info.average_time_ms = val;

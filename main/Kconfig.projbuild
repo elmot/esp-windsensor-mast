@@ -10,7 +10,11 @@ menu "Windsensor Configuration"
         string "SoftAP Password"
         default "EglaisEglais"
         help
-            WiFi password (WPA or WPA2) for the example to use for the softAP.
+            WiFi password (WPA or WPA2) for softAP
+
+    config SETUP_PASSWORD
+        string "Setup authorization password"
+        default "AlexShilov"
 
     config ESP_MAX_STA_CONN
         int "Maximal STA connections"

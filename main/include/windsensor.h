@@ -46,8 +46,8 @@ extern volatile angle_info_t angle_info;
 typedef struct
 {
     volatile uint16_t wind_speed_calib;
-    volatile uint16_t wind_speed_calib_ticks;
-    volatile int16_t wind_ticks;
+    volatile uint32_t wind_speed_calib_ticks;
+    volatile uint32_t wind_ticks;
     float wind;
 } wind_speed_info_t;
 

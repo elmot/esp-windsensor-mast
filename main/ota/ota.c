@@ -12,7 +12,7 @@ static esp_err_t ota_about_get_handler(httpd_req_t* req);
 
 static esp_err_t ota_put_handler(httpd_req_t* req);
 
-void httpd_printf(httpd_req_t* req, const char* format, ...);
+void httpd_printf(httpd_req_t* req, const char* format, ...) __attribute__ ((format (printf, 2, 3)));
 
 bool report_error(httpd_req_t* req, esp_err_t errorCode, const char* fileName, int line);
 
@@ -34,14 +34,9 @@ const httpd_uri_t ota_put = {
     .handler = ota_put_handler
 };
 
-#define MULTIPART "multipart/form-data"
-#define BOUNDARY "boundary="
-
-
 extern const char ota_start[] asm("_binary_ota_html_start");
 extern const char ota_end[] asm("_binary_ota_html_end");
 const char* OTA_TAG = "web-ota";
-#define OTA_PASSWORD "AlexShilov"
 
 volatile bool ota_busy = false;
 
@@ -81,7 +76,7 @@ static esp_err_t ota_about_get_handler(httpd_req_t* req)
                  "<body><h1>Yanus wind system</h1>");
     httpd_printf(req, "Name: %s<br>Version: %s<br>", desc->project_name, desc->version);
     httpd_printf(req, "Build timestamp: %s %s<br>IDF version: %s<br>"
-                 "Current Partition: %s (0x%08x)<br>",
+                 "Current Partition: %s (0x%08lx)<br>",
                  desc->date, desc->time, desc->idf_ver,
                  currentPartition->label, currentPartition->address);
     httpd_printf(req, "<hr>GPIO map:"
@@ -91,7 +86,7 @@ static esp_err_t ota_about_get_handler(httpd_req_t* req)
                  "<br>Speed Simulator signal: " INT_TO_STRING(CONFIG_SIMULATION_GPIO)
     );
 
-    httpd_printf(req, "<hr>Angle sensor status: %s; measured angle: %u; speed sensor pulse: %d ms"
+    httpd_printf(req, "<hr>Angle sensor status: %s; measured angle: %u; speed sensor pulse: %ld ms"
                  "<hr><a href=\"/wind\">Wind</a> | "
                  "<a href=\"/setup\">Setup</a> | "
                  "<a href=\"/setup/ota\">Firmware update</a><br>",
@@ -141,7 +136,7 @@ static esp_err_t ota_put_handler(httpd_req_t* req)
         unsigned char* base64Buffer = (unsigned char*)buffer + sizeof BASIC_AUTH_PREFIX - 1;
         authOk = mbedtls_base64_decode(auth, 199, &auth_len,
                                        base64Buffer, strlen((char*)base64Buffer)) == 0;
-        authOk &= strcmp((char*)auth, ":" OTA_PASSWORD) == 0;
+        authOk &= strcmp((char*)auth, ":" CONFIG_SETUP_PASSWORD) == 0;
     }
     if (!authOk)
     {
@@ -202,13 +197,13 @@ static esp_err_t ota_put_handler(httpd_req_t* req)
         esp_app_desc_t newDescription;
         esp_ota_get_partition_description(updatingPartition, &newDescription);
 
-        httpd_printf(req, "Updated Partition: %s (0x%08x)<br>", updatingPartition->label, updatingPartition->address);
+        httpd_printf(req, "Updated Partition: %s (0x%08lx)<br>", updatingPartition->label, updatingPartition->address);
         httpd_printf(req, "<hr>");
         httpd_printf(req, "Name: %s<br>", newDescription.project_name);
         httpd_printf(req, "Version: %s<br>", newDescription.version);
         httpd_printf(req, "Build timestamp: %s %s<br>", newDescription.date, newDescription.time);
         httpd_printf(req, "IDF version: %s<br>", newDescription.idf_ver);
-        httpd_printf(req, "Switching partitions...<br>", newDescription.idf_ver);
+        httpd_printf(req, "Switching partitions...<br>");
         if (report_error(req, esp_ota_set_boot_partition(updatingPartition),__FILE__,__LINE__))
         {
             httpd_printf(req, "Upgrade failed<br>");

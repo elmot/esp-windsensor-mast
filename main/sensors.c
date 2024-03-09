@@ -28,9 +28,8 @@ static volatile bool speed_phase = 0;
 static volatile uint32_t speed_tick_counter = 0;
 static volatile gptimer_handle_t speed_gptimer_handle = 0;
 
-
 // ReSharper disable once CppDFAConstantFunctionResult
-static bool IRAM_ATTR wind_speed_callback(struct gptimer_t*, const gptimer_alarm_event_data_t*, void*)
+static bool IRAM_ATTR wind_speed_callback(__unused struct gptimer_t* gptimer,__unused const gptimer_alarm_event_data_t* eventData,__unused void* user_data)
 {
     speed_tick_counter++;
     if (speed_tick_counter < CONFIG_SPEED_SENSOR_DEBOUNCE_MS) return false;
@@ -53,7 +52,7 @@ static bool IRAM_ATTR wind_speed_callback(struct gptimer_t*, const gptimer_alarm
         {
             wind_speed_info.wind_ticks = speed_tick_counter;
             wind_speed_info.wind = (float)wind_speed_info.wind_speed_calib_ticks *
-                wind_speed_info.wind_speed_calib / speed_tick_counter;
+                    (float)wind_speed_info.wind_speed_calib / (float)speed_tick_counter;
 
             speed_tick_counter = 0;
         }
@@ -229,7 +228,7 @@ _Noreturn void data_broadcast_task(__unused void* args)
         appendCheckSum(nmea_text, sizeof nmea_text);
 
         ESP_LOGD(TAG_SENSOR,
-                 "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; WARN: %s; AVERAGE_ANGLE: %3d; SPEED_TICKS: %d; SPEED: %f",
+                 "Status: %10s; AGC: x%02x; RAW ANGLE: %3d; ANGLE: %3d; WARN: %s; AVERAGE_ANGLE: %3d; SPEED_TICKS: %ld; SPEED: %f",
                  statusStr,
                  angle_info.agc,
                  angle_info.last_raw_angle,
@@ -254,7 +253,7 @@ int sensor_response(char* buffer, ssize_t capacity)
     const char* statusStr = sensor_status();
     return snprintf(buffer, capacity,
                     "{\"sensor\": \"%s\",\"agc\":%d,\"angle\":%d,"
-                    "\"speedTicks\": %d,\"speed\": %3.1f,"
+                    "\"speedTicks\": %ld,\"speed\": %3.1f,"
                     "\"warning\": \"%s\","
                     "\"averTime\": %d,\"noSailAngle\": %d,\"deadRunAngle\": %d}",
                     statusStr, angle_info.agc, angle_info.angle,
