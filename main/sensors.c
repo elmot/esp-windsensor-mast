@@ -192,7 +192,7 @@ void appendCheckSum(char* nmea_text, size_t len)
     {
         checksum = checksum ^ nmea_text[i];
     }
-    snprintf(nmea_text + i, len - i, "*%02X", checksum);
+    snprintf(nmea_text + i, len - i, "*%02X\r\n", checksum);
 }
 
 _Noreturn void data_broadcast_task(__unused void* args)
