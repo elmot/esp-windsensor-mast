@@ -3,3 +3,7 @@ cmake-build*/
 sdkconfig
 *.old.*
 *.old
+kicad/~*.lck
+kicad/_autosave*
+kicad/#auto_saved_files#
+kicad/mast_top-backups/
