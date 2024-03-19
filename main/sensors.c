@@ -28,12 +28,12 @@ static volatile bool speed_phase = 0;
 static volatile uint32_t speed_tick_counter = 0;
 static volatile gptimer_handle_t speed_gptimer_handle = 0;
 
-// ReSharper disable once CppDFAConstantFunctionResult
 static bool IRAM_ATTR wind_speed_callback(__unused struct gptimer_t* gptimer,__unused const gptimer_alarm_event_data_t* eventData,__unused void* user_data)
 {
     speed_tick_counter++;
     if (speed_tick_counter < CONFIG_SPEED_SENSOR_DEBOUNCE_MS) return false;
-    if (speed_tick_counter >= WIND_STALL_MS)
+    bool level = gpio_get_level(CONFIG_SPEED_SENSOR_GPIO);
+    if ((speed_tick_counter >= WIND_STALL_MS) && (level == speed_phase))
     {
         wind_speed_info.wind_ticks = -1;
         wind_speed_info.wind = 0.0f;
@@ -41,7 +41,6 @@ static bool IRAM_ATTR wind_speed_callback(__unused struct gptimer_t* gptimer,__u
         speed_tick_counter = WIND_STALL_MS + 1;
         return false;
     }
-    bool level = gpio_get_level(CONFIG_SPEED_SENSOR_GPIO);
     if (level == 1)
     {
         speed_phase = 1;
