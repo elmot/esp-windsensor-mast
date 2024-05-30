@@ -69,9 +69,9 @@ void initSpeedGpioAndTimers() {
             //set as output mode
             .mode = GPIO_MODE_INPUT,
             //disable pull-down mode
-            .pull_down_en = GPIO_PULLUP_ENABLE,
+            .pull_down_en = GPIO_PULLUP_DISABLE,
             //disable pull-up mode
-            .pull_up_en = GPIO_PULLDOWN_DISABLE
+            .pull_up_en = GPIO_PULLDOWN_ENABLE
     };
     gpio_config(&io_conf);
 
