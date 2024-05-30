@@ -10,12 +10,14 @@ extern const char root_end[] asm("_binary_root_html_end");
 extern const char setup_start[] asm("_binary_setup_html_start");
 extern const char setup_end[] asm("_binary_setup_html_end");
 
+extern const char favicon_start[] asm("_binary_favicon_ico_start");
+extern const char favicon_end[] asm("_binary_favicon_ico_end");
+
 // HTTP GET Handlers
 esp_err_t page_get_handler(httpd_req_t *req, const char *const start, const char *const end) {
-    const ssize_t root_len = end - start;
     ESP_LOGD(TAG_WEB, "Serve url: %s", req->uri);
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_send(req, start, root_len);
+    httpd_resp_send(req, start, end - start);
     return ESP_OK;
 }
 
@@ -30,6 +32,13 @@ static esp_err_t setup_get_handler(httpd_req_t *req) {
         return ESP_OK;
     }
     return page_get_handler(req, setup_start, setup_end);
+}
+
+// ReSharper disable once CppDFAConstantFunctionResult
+static esp_err_t favicon_get_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "image/vnd.microsoft.icon");
+    httpd_resp_send(req, favicon_start, favicon_end - favicon_start);
+    return ESP_OK;
 }
 
 static esp_err_t root_get_handler(httpd_req_t *req) {
@@ -120,6 +129,12 @@ static const httpd_uri_t root = {
         .handler = root_get_handler
 };
 
+static const httpd_uri_t favicon = {
+        .uri = "/favicon.ico",
+        .method = HTTP_GET,
+        .handler = favicon_get_handler
+};
+
 static const httpd_uri_t setup = {
         .uri = "/setup",
         .method = HTTP_GET,
@@ -159,6 +174,7 @@ esp_err_t http_404_error_handler(httpd_req_t *req, __unused httpd_err_code_t err
 
 void registerHttpHandlers(httpd_handle_t server) {
     httpd_register_uri_handler(server, &root);
+    httpd_register_uri_handler(server, &favicon);
     httpd_register_uri_handler(server, &wind);
     httpd_register_uri_handler(server, &data);
     httpd_register_uri_handler(server, &setup);
