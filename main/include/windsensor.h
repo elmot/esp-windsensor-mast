@@ -39,8 +39,7 @@ typedef struct
 {
     volatile uint16_t wind_speed_calib;
     volatile uint32_t wind_speed_calib_ticks;
-    volatile uint32_t wind_ticks;
-    float wind;
+    volatile int32_t wind_ticks;
 } wind_speed_info_t;
 
 extern volatile wind_speed_info_t wind_speed_info;
