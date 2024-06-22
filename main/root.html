@@ -123,7 +123,9 @@
     function drawAwa(angle) {
         const arrowStyle = document.getElementById("windArrow").style
         if (typeof angle === 'number') {
-            document.getElementById("awa").innerText = Math.abs(angle).toString()
+            angle = (3600 + angle) % 360 // to be in [0...359] in any case
+            const textAngle = (angle > 180 ? (360 - angle) : angle).toString()
+            document.getElementById("awa").innerText = textAngle
             arrowStyle.rotate = angle + "deg"
             arrowStyle.visibility = "visible"
         } else {
